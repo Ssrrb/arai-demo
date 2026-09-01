@@ -80,8 +80,8 @@
 <div id="name-modal" class="modal-backdrop web-ui" hidden role="dialog" aria-modal="true" aria-labelledby="name-title">
     <form id="name-form" class="modal-panel">
         <h2 id="name-title">ELIGE TU NOMBRE</h2>
-        <p>Este nombre aparecerá en la clasificación en vivo.</p>
-        <input id="name-input" class="name-input" name="playerName" maxlength="16" autocomplete="nickname" placeholder="JUGADOR" aria-describedby="name-error">
+        <p>Usa de 2 a 12 letras o números. No se permiten espacios ni símbolos.</p>
+        <input id="name-input" class="name-input" name="playerName" minlength="2" maxlength="12" pattern="[A-Za-z0-9]{2,12}" inputmode="text" autocomplete="nickname" placeholder="JUGADOR" aria-describedby="name-error">
         <div id="name-error" role="alert"></div>
         <div class="modal-actions">
             <button class="pixel-button primary" type="submit">GUARDAR Y JUGAR</button>
@@ -126,7 +126,8 @@ let leaderboardRetry = null;
 let startAfterNamePick = false;
 
 function normalizePlayerName(value){
-    return String(value || '').trim().replace(/[^a-zA-Z0-9 _-]/g, '').replace(/\s+/g, ' ').slice(0, 16);
+    const name = String(value || '');
+    return /^[a-zA-Z0-9]{2,12}$/.test(name) ? name : '';
 }
 function updateProfileUI(){ nameButton.textContent = playerName || 'ELIGE NOMBRE'; }
 function openNamePicker(shouldStart = false){
@@ -185,16 +186,43 @@ function submitRun(){
     const runId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
     leaderboardSocket.send(JSON.stringify({ type:'submitScore', runId, name:playerName, score, distance, bananas:bananaCount }));
 }
-nameForm.addEventListener('submit', event => {
+nameInput.addEventListener('input', () => {
+    const filtered = nameInput.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+    if (nameInput.value !== filtered) nameInput.value = filtered;
+    nameError.textContent = '';
+});
+nameForm.addEventListener('submit', async event => {
     event.preventDefault();
     const nextName = normalizePlayerName(nameInput.value);
-    if (nextName.length < 2){ nameError.textContent = 'Usa al menos 2 letras o números.'; return; }
-    playerName = nextName;
-    localStorage.setItem('mcc_player_name', playerName);
-    updateProfileUI();
-    const shouldStart = startAfterNamePick;
-    closeNamePicker();
-    if (shouldStart) startGame();
+    if (!nextName){ nameError.textContent = 'Usa de 2 a 12 letras o números, sin espacios ni símbolos.'; return; }
+
+    const submitButton = nameForm.querySelector('[type="submit"]');
+    submitButton.disabled = true;
+    nameError.textContent = 'Comprobando nombre…';
+    try {
+        const params = new URLSearchParams({ name: nextName, current: playerName });
+        const response = await fetch(`/api/name-check?${params}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error('Name check failed');
+        const result = await response.json();
+        if (!result.valid){
+            nameError.textContent = result.reason === 'inappropriate-name'
+                ? 'Ese nombre no está permitido.'
+                : 'Usa solamente letras y números.';
+            return;
+        }
+        if (!result.available){ nameError.textContent = 'Ese nombre ya está en uso.'; return; }
+
+        playerName = nextName;
+        localStorage.setItem('mcc_player_name', playerName);
+        updateProfileUI();
+        const shouldStart = startAfterNamePick;
+        closeNamePicker();
+        if (shouldStart) startGame();
+    } catch (error) {
+        nameError.textContent = 'No pudimos comprobar el nombre. Inténtalo de nuevo.';
+    } finally {
+        submitButton.disabled = false;
+    }
 });
 document.getElementById('name-cancel').addEventListener('click', closeNamePicker);
 nameButton.addEventListener('click', () => openNamePicker(false));
@@ -3099,31 +3127,31 @@ function drawGameOver(){
     ctx.fillStyle = tg;
     ctx.fillText('¡TE ESTRELLASTE!', W/2, crashY);
 
-    // === SCORE PANEL — sized so values fit comfortably ===
+    // === SCORE PANEL — leave enough height for both rows of secondary stats ===
     const panelW = Math.min(W * 0.85, 380);
-    const panelH = Math.min(H * (isPortrait ? 0.13 : 0.22), 140);
+    const panelH = Math.min(H * (isPortrait ? 0.18 : 0.24), 160);
     const panelX = W/2 - panelW/2;
     const panelY = crashY + crashSize * 1.20;
     drawPixelPanel(panelX, panelY, panelW, panelH);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
 
-    // SCORE big in middle, secondary stats on sides
-    const labelSize = Math.max(13, Math.round(panelH * 0.16));
-    const bigSize = Math.max(28, Math.round(panelH * 0.45));
-    const sideSize = Math.max(16, Math.round(panelH * 0.24));
-    // Center: SCORE
+    // Score at the top; labels and values stay inside the lower half.
+    const labelSize = Math.max(13, Math.round(panelH * 0.12));
+    const bigSize = Math.max(28, Math.round(panelH * 0.33));
+    const sideSize = Math.max(16, Math.round(panelH * 0.16));
+    const leftStatX = panelX + panelW * 0.25;
+    const rightStatX = panelX + panelW * 0.75;
     ctx.font = `${labelSize}px "Courier New", monospace`;
-    drawText('PUNTOS', W/2, panelY + panelH * 0.10, '#a07050', '#000');
+    drawText('PUNTOS', W/2, panelY + panelH * 0.09, '#a07050', '#000');
     ctx.font = `bold ${bigSize}px "Courier New", monospace`;
-    drawText(`${score}`, W/2, panelY + panelH * 0.32, '#ffe070', '#3a2008');
-    // Sides: distance + bananas
-    ctx.font = `${labelSize * 0.85}px "Courier New", monospace`;
-    drawText('DISTANCIA', panelX + panelW * 0.20, panelY + panelH * 0.72, '#a07050', '#000');
-    drawText('PLÁTANOS',  panelX + panelW * 0.80, panelY + panelH * 0.72, '#a07050', '#000');
+    drawText(`${score}`, W/2, panelY + panelH * 0.25, '#ffe070', '#3a2008');
+    ctx.font = `${Math.round(labelSize * 0.85)}px "Courier New", monospace`;
+    drawText('DISTANCIA', leftStatX, panelY + panelH * 0.67, '#a07050', '#000');
+    drawText('PLÁTANOS', rightStatX, panelY + panelH * 0.67, '#a07050', '#000');
     ctx.font = `bold ${sideSize}px "Courier New", monospace`;
-    drawText(`${distance}m`,    panelX + panelW * 0.20, panelY + panelH * 0.86, C.text, C.textShad);
-    drawText(`${bananaCount}`,  panelX + panelW * 0.80, panelY + panelH * 0.86, C.text, C.textShad);
+    drawText(`${distance}m`, leftStatX, panelY + panelH * 0.81, C.text, C.textShad);
+    drawText(`${bananaCount}`, rightStatX, panelY + panelH * 0.81, C.text, C.textShad);
 
     // === Best / New Record (OUTSIDE panel, with margin) ===
     const recSize = Math.max(15, Math.min(W * 0.045, 24));

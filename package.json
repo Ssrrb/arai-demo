@@ -6,7 +6,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node --env-file-if-exists=.env server.js",
-    "check": "node --check server.js"
+    "check": "node --check server.js && node --check profanity.js",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=22"

@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Pool } = require('pg');
 const { WebSocketServer, WebSocket } = require('ws');
+const { hasProfanity } = require('./profanity');
 
 const PORT = Number(process.env.PORT || 8080);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -33,7 +34,13 @@ let entries = [];
 let submissionChain = Promise.resolve();
 
 function cleanName(value) {
-  return String(value || '').trim().replace(/[^a-zA-Z0-9 _-]/g, '').replace(/\s+/g, ' ').slice(0, 16);
+  const name = String(value || '');
+  return /^[a-zA-Z0-9]{2,12}$/.test(name) ? name : '';
+}
+
+function nameRejectionReason(value) {
+  if (!cleanName(value)) return 'invalid-name';
+  return hasProfanity(value) ? 'inappropriate-name' : null;
 }
 
 function integer(value, max) {
@@ -127,10 +134,27 @@ function serveStatic(request, response, pathname) {
   });
 }
 
-const server = http.createServer((request, response) => {
-  const pathname = new URL(request.url, `http://${request.headers.host || 'localhost'}`).pathname;
+const server = http.createServer(async (request, response) => {
+  const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+  const pathname = url.pathname;
   if (request.method === 'GET' && pathname === '/healthz') return sendJson(response, 200, { ok: true });
   if (request.method === 'GET' && pathname === '/api/leaderboard') return sendJson(response, 200, { entries: publicEntries() });
+  if (request.method === 'GET' && pathname === '/api/name-check') {
+    const name = cleanName(url.searchParams.get('name'));
+    const reason = nameRejectionReason(url.searchParams.get('name'));
+    if (reason) return sendJson(response, 200, { valid: false, available: false, reason });
+    try {
+      const currentName = cleanName(url.searchParams.get('current'));
+      if (currentName && currentName.toLowerCase() === name.toLowerCase()) {
+        return sendJson(response, 200, { valid: true, available: true });
+      }
+      const result = await pool.query('SELECT 1 FROM leaderboard_scores WHERE player_key = $1', [name.toLowerCase()]);
+      return sendJson(response, 200, { valid: true, available: result.rowCount === 0 });
+    } catch (error) {
+      console.error('Could not check player name:', error);
+      return sendJson(response, 503, { error: 'database-error' });
+    }
+  }
   if ((request.method === 'GET' || request.method === 'HEAD') && pathname !== '/ws') return serveStatic(request, response, pathname);
   sendJson(response, 405, { error: 'Method not allowed' });
 });
@@ -184,11 +208,16 @@ wss.on('connection', socket => {
     lastSubmission = now;
 
     const name = cleanName(message.name);
+    const nameReason = nameRejectionReason(message.name);
     const score = integer(message.score, 1_000_000_000);
     const distance = integer(message.distance, 10_000_000);
     const bananas = integer(message.bananas, 10_000_000);
     const runId = String(message.runId || '').slice(0, 80);
-    if (name.length < 2 || score === null || distance === null || bananas === null || !runId) {
+    if (nameReason) {
+      safeSend(socket, { type: 'scoreResult', runId, accepted: false, reason: nameReason });
+      return;
+    }
+    if (score === null || distance === null || bananas === null || !runId) {
       safeSend(socket, { type: 'scoreResult', runId, accepted: false, reason: 'invalid-submission' });
       return;
     }
