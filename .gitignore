@@ -12,3 +12,4 @@ data/
 
 # OS junk
 .DS_Store
+.env

@@ -154,7 +154,7 @@ function renderLeaderboard(){
         const name = document.createElement('span');
         const scoreText = document.createElement('strong');
         name.textContent = entry.name;
-        scoreText.textContent = `${entry.score} pts`;
+        scoreText.textContent = `${entry.score} puntos`;
         li.append(name, scoreText);
         leaderboardList.appendChild(li);
     });
@@ -2636,14 +2636,14 @@ function drawHUD(){
     // ROW 2 — SCORE (label + big value, primary)
     const row2Y = padY + rowH;
     ctx.font = `bold ${Math.round(11 * k)}px "Courier New", monospace`;
-    drawText('PTS', padX, row2Y + 7 * k, '#a07050', '#000');
+    drawText('PUNTOS', padX, row2Y + 7 * k, '#a07050', '#000');
     ctx.font = `bold ${Math.round(22 * k)}px "Courier New", monospace`;
     drawText(`${score} / ${TARGET_SCORE}`, padX + labelCol, row2Y, C.text, C.textShad);
 
     // ROW 3 — Distance (label + medium value)
     const row3Y = padY + rowH * 2;
     ctx.font = `bold ${Math.round(11 * k)}px "Courier New", monospace`;
-    drawText('DIST', padX, row3Y + 5 * k, '#a07050', '#000');
+    drawText('DIST.', padX, row3Y + 5 * k, '#a07050', '#000');
     ctx.font = `bold ${Math.round(18 * k)}px "Courier New", monospace`;
     drawText(`${distance}m`, padX + labelCol, row3Y, '#d4a070', '#2a1408');
 
@@ -2974,7 +2974,7 @@ function drawMenu(){
         titleH = drawH;
     } else {
         // Fallback: pixel-text title
-        const lines = isLandscape ? ['MINE CART CARNAGE'] : ['MINE CART', 'CARNAGE'];
+        const lines = isLandscape ? ['CAOS EN LA VAGONETA'] : ['CAOS EN LA', 'VAGONETA'];
         const longest = lines.reduce((a, b) => a.length > b.length ? a : b);
         const cap = isLandscape ? Math.min(W * 0.07, H * 0.18, 72)
                                 : Math.min(W * 0.15, H * 0.10, 84);
@@ -3024,7 +3024,7 @@ function drawMenu(){
         ctx.font = `bold ${recSize}px "Courier New", monospace`;
         drawText('★ RÉCORD ★', W/2, badgeY + padY, '#ffd070', '#3a1808');
         ctx.font = `${Math.round(recSize * 0.88)}px "Courier New", monospace`;
-        drawText(`${bestScore} pts  ·  ${bestDist}m`,
+        drawText(`${bestScore} puntos  ·  ${bestDist}m`,
                  W/2, badgeY + padY + lineH, '#f0c878', '#3a1808');
     }
 
@@ -3042,10 +3042,10 @@ function drawLevelComplete(){
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     const isPortrait = H > W;
-    const titleSize = fitTextSize('¡NIVEL COMPLETADO!', W - 40, Math.min(W * 0.13, 72));
+    const titleSize = fitTextSize('¡NIVEL SUPERADO!', W - 40, Math.min(W * 0.13, 72));
     const titleY = H * (isPortrait ? 0.14 : 0.10);
     ctx.font = `bold ${titleSize}px "Courier New", monospace`;
-    drawText('¡NIVEL COMPLETADO!', W/2, titleY, '#ffe070', '#7a3010');
+    drawText('¡NIVEL SUPERADO!', W/2, titleY, '#ffe070', '#7a3010');
 
     const panelW = Math.min(W * 0.85, 400);
     const panelH = Math.min(H * (isPortrait ? 0.20 : 0.30), 160);
@@ -3053,7 +3053,7 @@ function drawLevelComplete(){
     const panelY = titleY + titleSize * 1.45;
     drawPixelPanel(panelX, panelY, panelW, panelH);
     ctx.font = `${Math.max(13, Math.round(panelH * 0.13))}px "Courier New", monospace`;
-    drawText(`OBJETIVO: ${TARGET_SCORE} PTS`, W/2, panelY + panelH * 0.12, '#a07050', '#000');
+    drawText(`OBJETIVO: ${TARGET_SCORE} PUNTOS`, W/2, panelY + panelH * 0.12, '#a07050', '#000');
     ctx.font = `bold ${Math.max(30, Math.round(panelH * 0.36))}px "Courier New", monospace`;
     drawText(`${score}`, W/2, panelY + panelH * 0.30, '#ffe070', '#3a2008');
     ctx.font = `${Math.max(14, Math.round(panelH * 0.14))}px "Courier New", monospace`;
@@ -3086,18 +3086,18 @@ function drawGameOver(){
 
     const isPortrait = H > W;
 
-    // === CRASH! title (top) ===
-    const crashSize = fitTextSize('¡CHOQUE!', W - 60, Math.min(W * 0.18, 90));
+    // === Título de fin de partida ===
+    const crashSize = fitTextSize('¡TE ESTRELLASTE!', W - 60, Math.min(W * 0.18, 90));
     ctx.font = `bold ${crashSize}px "Courier New", monospace`;
     ctx.lineWidth = Math.max(4, crashSize * 0.10);
     ctx.strokeStyle = '#1a0204';
     const crashY = H * (isPortrait ? 0.07 : 0.14);
-    ctx.strokeText('¡CHOQUE!', W/2, crashY);
+    ctx.strokeText('¡TE ESTRELLASTE!', W/2, crashY);
     const tg = ctx.createLinearGradient(0, crashY, 0, crashY + crashSize);
     tg.addColorStop(0, '#ff9050');
     tg.addColorStop(1, '#9a1010');
     ctx.fillStyle = tg;
-    ctx.fillText('¡CHOQUE!', W/2, crashY);
+    ctx.fillText('¡TE ESTRELLASTE!', W/2, crashY);
 
     // === SCORE PANEL — sized so values fit comfortably ===
     const panelW = Math.min(W * 0.85, 380);
@@ -3139,7 +3139,7 @@ function drawGameOver(){
         ctx.globalAlpha = 1;
     } else {
         ctx.font = `${recSize}px "Courier New", monospace`;
-        drawText(`Récord: ${bestScore} pts · ${bestDist}m`,
+        drawText(`Récord: ${bestScore} puntos · ${bestDist}m`,
                  W/2, recY, '#a07050', '#000');
     }
 

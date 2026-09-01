@@ -47,7 +47,7 @@ server adds persistent realtime rankings. Mobile-first but feels great on deskto
 - 📺 **CRT scanline overlay** for retro CRT vibes
 - 👤 **Player names** stored locally and editable from the menu
 - 🏆 **Realtime leaderboard** broadcast to every connected player over WebSockets
-- 💾 **Persistent scores** in a Docker volume (plus localStorage personal bests)
+- 💾 **Persistent per-player high scores** in PostgreSQL (plus localStorage personal bests)
 
 ## Controls
 
@@ -63,7 +63,7 @@ server adds persistent realtime rankings. Mobile-first but feels great on deskto
 - **Vanilla JavaScript**, no framework, no build step
 - **Web Audio API** for synthesized chiptune music + SFX
 - **localStorage** for player profile and personal high-score persistence
-- **Node.js + WebSockets** for static hosting and the realtime leaderboard
+- **Node.js + WebSockets + PostgreSQL** for static hosting and the persistent realtime leaderboard
 - **Sprite pipeline** (in [`scripts/`](scripts/)):
   - Sprites generated with Google's Nano Banana (Gemini 2.5 Flash Image)
   - Backgrounds removed with macOS Vision framework via a small Swift script
@@ -74,12 +74,14 @@ server adds persistent realtime rankings. Mobile-first but feels great on deskto
 ## Local development
 
 ```bash
+cp .env.example .env
+# Set DATABASE_URL in .env to your PostgreSQL connection string.
 npm install
 npm start
 # → http://localhost:8080
 ```
 
-The game still has no frontend build step. Run it through the Node server to enable names, score persistence, and live leaderboard updates.
+The server creates the `leaderboard_scores` table and ranking index on startup. Browsers submit completed runs over `/ws`; PostgreSQL keeps only the highest score for each normalized player name. A tied score replaces the stored run only when its distance is greater.
 
 ## Docker deployment
 
@@ -88,7 +90,7 @@ docker compose up --build -d
 # → http://localhost:8080
 ```
 
-`compose.yaml` mounts a named volume at `/data`, so leaderboard scores survive container replacement. Set `PORT` and `LEADERBOARD_FILE` to customize the server. The container exposes `/healthz` for health checks.
+`compose.yaml` reads `DATABASE_URL` from `.env` and passes it only to the Node server. The browser never receives database credentials. The container exposes `/healthz` for health checks.
 
 See [`TODO.md`](TODO.md) for the security, anti-cheat, identity, database, and multi-replica work recommended before a public competitive deployment.
 
@@ -97,7 +99,8 @@ See [`TODO.md`](TODO.md) for the security, anti-cheat, identity, database, and m
 ```
 mine-cart-carnage/
 ├── index.html           # game and player/leaderboard UI
-├── server.js            # static server + WebSocket leaderboard
+├── server.js            # static server + WebSocket/PostgreSQL leaderboard
+├── .env.example         # database configuration template
 ├── Dockerfile
 ├── compose.yaml
 ├── TODO.md              # production leaderboard follow-ups

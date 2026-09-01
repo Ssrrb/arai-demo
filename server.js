@@ -3,13 +3,20 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const { Pool } = require('pg');
 const { WebSocketServer, WebSocket } = require('ws');
 
 const PORT = Number(process.env.PORT || 8080);
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOT = __dirname;
-const DATA_FILE = process.env.LEADERBOARD_FILE || path.join(ROOT, 'data', 'leaderboard.json');
-const MAX_ENTRIES = 100;
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  console.error('DATABASE_URL is required');
+  process.exit(1);
+}
+
+const pool = new Pool({ connectionString: DATABASE_URL, max: 10 });
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -22,8 +29,8 @@ const mimeTypes = {
   '.ico': 'image/x-icon',
 };
 
-let entries = loadEntries();
-let writeChain = Promise.resolve();
+let entries = [];
+let submissionChain = Promise.resolve();
 
 function cleanName(value) {
   return String(value || '').trim().replace(/[^a-zA-Z0-9 _-]/g, '').replace(/\s+/g, ' ').slice(0, 16);
@@ -35,33 +42,55 @@ function integer(value, max) {
 }
 
 function publicEntries() {
-  return entries.slice(0, 10).map(({ name, score, distance, bananas, achievedAt }) => ({
+  return entries.map(({ name, score, distance, bananas, achievedAt }) => ({
     name, score, distance, bananas, achievedAt,
   }));
 }
 
-function sortEntries(list) {
-  return list.sort((a, b) => b.score - a.score || b.distance - a.distance || a.achievedAt.localeCompare(b.achievedAt));
+async function initializeDatabase() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS leaderboard_scores (
+      player_key VARCHAR(16) PRIMARY KEY,
+      name VARCHAR(16) NOT NULL,
+      score INTEGER NOT NULL CHECK (score >= 0),
+      distance INTEGER NOT NULL CHECK (distance >= 0),
+      bananas INTEGER NOT NULL CHECK (bananas >= 0),
+      achieved_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS leaderboard_scores_ranking_idx
+    ON leaderboard_scores (score DESC, distance DESC, achieved_at ASC)
+  `);
 }
 
-function loadEntries() {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    return Array.isArray(parsed) ? sortEntries(parsed).slice(0, MAX_ENTRIES) : [];
-  } catch (error) {
-    if (error.code !== 'ENOENT') console.error('Could not load leaderboard:', error);
-    return [];
-  }
+async function refreshLeaderboard() {
+  const result = await pool.query(`
+    SELECT name, score, distance, bananas, achieved_at AS "achievedAt"
+    FROM leaderboard_scores
+    ORDER BY score DESC, distance DESC, achieved_at ASC
+    LIMIT 10
+  `);
+  entries = result.rows;
+  return entries;
 }
 
-function persistEntries() {
-  const snapshot = JSON.stringify(entries, null, 2);
-  writeChain = writeChain.then(async () => {
-    await fs.promises.mkdir(path.dirname(DATA_FILE), { recursive: true });
-    const temporary = `${DATA_FILE}.tmp`;
-    await fs.promises.writeFile(temporary, snapshot);
-    await fs.promises.rename(temporary, DATA_FILE);
-  }).catch(error => console.error('Could not persist leaderboard:', error));
+async function saveHighScore({ key, name, score, distance, bananas }) {
+  const result = await pool.query(`
+    INSERT INTO leaderboard_scores (player_key, name, score, distance, bananas, achieved_at)
+    VALUES ($1, $2, $3, $4, $5, NOW())
+    ON CONFLICT (player_key) DO UPDATE SET
+      name = EXCLUDED.name,
+      score = EXCLUDED.score,
+      distance = EXCLUDED.distance,
+      bananas = EXCLUDED.bananas,
+      achieved_at = EXCLUDED.achieved_at
+    WHERE leaderboard_scores.score < EXCLUDED.score
+       OR (leaderboard_scores.score = EXCLUDED.score
+           AND leaderboard_scores.distance < EXCLUDED.distance)
+    RETURNING player_key
+  `, [key, name, score, distance, bananas]);
+  return result.rowCount === 1;
 }
 
 function sendJson(response, status, body) {
@@ -109,13 +138,37 @@ const server = http.createServer((request, response) => {
 const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 2048 });
 const seenRuns = new Set();
 
+function safeSend(socket, message) {
+  if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
+}
+
 function broadcastLeaderboard() {
   const payload = JSON.stringify({ type: 'leaderboard', entries: publicEntries() });
   for (const client of wss.clients) if (client.readyState === WebSocket.OPEN) client.send(payload);
 }
 
+async function processSubmission(socket, submission) {
+  try {
+    const accepted = await saveHighScore(submission);
+    if (accepted) {
+      await refreshLeaderboard();
+      broadcastLeaderboard();
+    }
+    safeSend(socket, {
+      type: 'scoreResult',
+      runId: submission.runId,
+      accepted,
+      reason: accepted ? undefined : 'not-a-high-score',
+    });
+  } catch (error) {
+    seenRuns.delete(submission.runId);
+    console.error('Could not save score:', error);
+    safeSend(socket, { type: 'scoreResult', runId: submission.runId, accepted: false, reason: 'database-error' });
+  }
+}
+
 wss.on('connection', socket => {
-  socket.send(JSON.stringify({ type: 'leaderboard', entries: publicEntries() }));
+  safeSend(socket, { type: 'leaderboard', entries: publicEntries() });
   let lastSubmission = 0;
 
   socket.on('message', raw => {
@@ -124,7 +177,10 @@ wss.on('connection', socket => {
     if (message.type !== 'submitScore') return;
 
     const now = Date.now();
-    if (now - lastSubmission < 1000) return;
+    if (now - lastSubmission < 1000) {
+      safeSend(socket, { type: 'scoreResult', runId: message.runId, accepted: false, reason: 'rate-limited' });
+      return;
+    }
     lastSubmission = now;
 
     const name = cleanName(message.name);
@@ -132,28 +188,43 @@ wss.on('connection', socket => {
     const distance = integer(message.distance, 10_000_000);
     const bananas = integer(message.bananas, 10_000_000);
     const runId = String(message.runId || '').slice(0, 80);
-    if (name.length < 2 || score === null || distance === null || bananas === null || !runId || seenRuns.has(runId)) return;
+    if (name.length < 2 || score === null || distance === null || bananas === null || !runId) {
+      safeSend(socket, { type: 'scoreResult', runId, accepted: false, reason: 'invalid-submission' });
+      return;
+    }
+    if (seenRuns.has(runId)) {
+      safeSend(socket, { type: 'scoreResult', runId, accepted: false, reason: 'duplicate-run' });
+      return;
+    }
     seenRuns.add(runId);
     if (seenRuns.size > 10_000) seenRuns.delete(seenRuns.values().next().value);
 
-    const key = name.toLocaleLowerCase('en-US');
-    const existing = entries.find(entry => entry.key === key);
-    if (existing && (existing.score > score || (existing.score === score && existing.distance >= distance))) return;
-
-    if (existing) entries = entries.filter(entry => entry !== existing);
-    entries.push({ key, name, score, distance, bananas, achievedAt: new Date().toISOString() });
-    entries = sortEntries(entries).slice(0, MAX_ENTRIES);
-    persistEntries();
-    broadcastLeaderboard();
+    const submission = { runId, key: name.toLowerCase(), name, score, distance, bananas };
+    submissionChain = submissionChain.then(() => processSubmission(socket, submission));
   });
 });
 
-server.listen(PORT, HOST, () => console.log(`Mine Cart Carnage listening on http://${HOST}:${PORT}`));
-
-function shutdown() {
-  for (const client of wss.clients) client.close(1001, 'Server shutting down');
-  server.close(() => process.exit(0));
-  setTimeout(() => process.exit(1), 5000).unref();
+async function start() {
+  await initializeDatabase();
+  await refreshLeaderboard();
+  server.listen(PORT, HOST, () => console.log(`Mine Cart Carnage listening on http://${HOST}:${PORT}`));
 }
+
+let shuttingDown = false;
+async function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  for (const client of wss.clients) client.close(1001, 'Server shutting down');
+  server.close();
+  await pool.end().catch(error => console.error('Could not close database pool:', error));
+  process.exit(0);
+}
+
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
+
+start().catch(async error => {
+  console.error('Could not initialize leaderboard database:', error);
+  await pool.end().catch(() => {});
+  process.exit(1);
+});
