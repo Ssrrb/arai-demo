@@ -1,0 +1,14 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      LEADERBOARD_FILE: /data/leaderboard.json
+    volumes:
+      - leaderboard-data:/data
+    restart: unless-stopped
+
+volumes:
+  leaderboard-data:

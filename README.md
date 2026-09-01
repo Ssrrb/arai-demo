@@ -2,14 +2,14 @@
 
 <img src="assets/title.png" alt="Mine Cart Carnage" width="520">
 
-### An endless mine-cart runner. Pixel-art tribute to the SNES classic.
+### A score-chasing mine-cart runner. Pixel-art tribute to the SNES classic.
 
-[![Play Now](https://img.shields.io/badge/▶_PLAY_NOW-kabronero.github.io-FFD060?style=for-the-badge&labelColor=3a1808)](https://kabronero.github.io/mine-cart-carnage/)
+[![Play Now]()
 
 [![HTML5 Canvas](https://img.shields.io/badge/HTML5-Canvas-E34F26?logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas)
 [![Vanilla JS](https://img.shields.io/badge/Vanilla_JS-no_framework-F7DF1E?logo=javascript&logoColor=black)](#)
-[![Zero deps](https://img.shields.io/badge/dependencies-zero-brightgreen)](#)
-[![Single file](https://img.shields.io/badge/build-single_HTML_file-blueviolet)](#)
+[![WebSocket](https://img.shields.io/badge/leaderboard-realtime-brightgreen)](#)
+[![Docker](https://img.shields.io/badge/deploy-Docker-blue)](Dockerfile)
 [![Mobile ready](https://img.shields.io/badge/mobile-portrait_%26_landscape-1E90FF?logo=android&logoColor=white)](#)
 [![Built with Claude](https://img.shields.io/badge/built_with-Claude_Code-D97706?logo=anthropic&logoColor=white)](https://claude.com/claude-code)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -20,12 +20,13 @@
 
 ## What is it?
 
-A browser-playable, mobile-friendly endless runner inspired by the iconic
+A browser-playable, mobile-friendly runner inspired by the iconic
 **Mine Cart Carnage** level from *Donkey Kong Country* (SNES, 1994).
-Hold the screen to jump. Collect bananas. Build combos. Don't fall.
+Hold the screen to jump. Collect bananas, build combos, and reach 1,000 points
+to complete the level. Don't fall.
 
-Single `index.html` file, zero build step, plays anywhere a modern browser
-runs. Mobile-first but feels great on desktop too.
+The frontend remains a single `index.html` with zero build step. A small Node.js
+server adds persistent realtime rankings. Mobile-first but feels great on desktop too.
 
 ## Features
 
@@ -44,7 +45,9 @@ runs. Mobile-first but feels great on desktop too.
 - 🎨 **AI-generated 16-bit pixel art** sprites with proper alpha-keyed
   PNGs (Vision framework + magenta chroma-key pipeline)
 - 📺 **CRT scanline overlay** for retro CRT vibes
-- 💾 **localStorage** high-score persistence
+- 👤 **Player names** stored locally and editable from the menu
+- 🏆 **Realtime leaderboard** broadcast to every connected player over WebSockets
+- 💾 **Persistent scores** in a Docker volume (plus localStorage personal bests)
 
 ## Controls
 
@@ -59,7 +62,8 @@ runs. Mobile-first but feels great on desktop too.
 - **HTML5 Canvas** for everything
 - **Vanilla JavaScript**, no framework, no build step
 - **Web Audio API** for synthesized chiptune music + SFX
-- **localStorage** for high-score persistence
+- **localStorage** for player profile and personal high-score persistence
+- **Node.js + WebSockets** for static hosting and the realtime leaderboard
 - **Sprite pipeline** (in [`scripts/`](scripts/)):
   - Sprites generated with Google's Nano Banana (Gemini 2.5 Flash Image)
   - Backgrounds removed with macOS Vision framework via a small Swift script
@@ -70,21 +74,33 @@ runs. Mobile-first but feels great on desktop too.
 ## Local development
 
 ```bash
-# Just open the file
-open index.html
-
-# Or run a local server (recommended for sprite loading)
-python3 -m http.server 8765
-# → http://localhost:8765
+npm install
+npm start
+# → http://localhost:8080
 ```
 
-That's it. There's no build step.
+The game still has no frontend build step. Run it through the Node server to enable names, score persistence, and live leaderboard updates.
+
+## Docker deployment
+
+```bash
+docker compose up --build -d
+# → http://localhost:8080
+```
+
+`compose.yaml` mounts a named volume at `/data`, so leaderboard scores survive container replacement. Set `PORT` and `LEADERBOARD_FILE` to customize the server. The container exposes `/healthz` for health checks.
+
+See [`TODO.md`](TODO.md) for the security, anti-cheat, identity, database, and multi-replica work recommended before a public competitive deployment.
 
 ## Project structure
 
 ```
 mine-cart-carnage/
-├── index.html           # the entire game
+├── index.html           # game and player/leaderboard UI
+├── server.js            # static server + WebSocket leaderboard
+├── Dockerfile
+├── compose.yaml
+├── TODO.md              # production leaderboard follow-ups
 ├── assets/              # sprites, logo, cave background
 └── scripts/             # one-shot pipeline tools (Node, Python, Swift)
 ```

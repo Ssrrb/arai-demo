@@ -1,0 +1,17 @@
+{
+  "name": "mine-cart-carnage",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mine Cart Carnage web game and realtime leaderboard server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}

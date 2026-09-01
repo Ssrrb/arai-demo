@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0418">
-<title>Mine Cart Carnage Endless</title>
+<title>Mine Cart Carnage: Infinito</title>
 <style>
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{
@@ -52,19 +52,156 @@
     }
     /* Portrait is fine — game letterboxes itself */
     #orient{display:none !important}
+    .web-ui{font-family:'Courier New',monospace}
+    #profile-controls{position:fixed;top:max(12px,env(safe-area-inset-top));right:12px;z-index:8;display:flex;gap:8px;align-items:center}
+    #profile-controls[hidden]{display:none}
+    .pixel-button{border:2px solid #1a0c04;border-radius:0;background:#6a3212;color:#ffe090;padding:8px 10px;font-weight:bold;box-shadow:3px 3px #000;cursor:pointer}
+    .pixel-button.primary{background:#d07820;color:#fff}
+    .pixel-button:focus-visible,.name-input:focus-visible{outline:3px solid #ffe070;outline-offset:2px}
+    .modal-backdrop{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(5,2,14,.88);touch-action:auto}
+    .modal-backdrop[hidden]{display:none}
+    .modal-panel{width:min(440px,100%);max-height:min(680px,90vh);overflow:auto;border:4px solid #5a3818;background:#1b0d24;color:#f5d090;padding:24px;box-shadow:8px 8px #000;text-align:center}
+    .modal-panel h2{color:#ffe070;margin-bottom:12px}.modal-panel p{margin-bottom:16px;line-height:1.4;color:#d4a070}
+    .name-input{width:100%;border:3px solid #7a4a26;border-radius:0;background:#090411;color:#fff;padding:12px;font:700 20px 'Courier New',monospace;text-align:center;text-transform:uppercase;margin-bottom:14px}
+    .modal-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+    #name-error{min-height:20px;color:#ff8060;margin:-5px 0 10px}
+    #leaderboard-list{list-style:none;text-align:left;margin:16px 0;counter-reset:rank}
+    #leaderboard-list li{counter-increment:rank;display:grid;grid-template-columns:2.2em 1fr auto;gap:8px;padding:9px 4px;border-bottom:1px solid #4a2818}
+    #leaderboard-list li::before{content:counter(rank) '.';color:#a07050}
+    .network-status{font-size:12px;color:#a07050;margin-top:12px}
 </style>
 </head>
 <body>
 <div id="wrap"><canvas id="game"></canvas></div>
+<div id="profile-controls" class="web-ui" hidden>
+    <button id="name-button" class="pixel-button" type="button">JUGADOR</button>
+    <button id="leaderboard-button" class="pixel-button primary" type="button">🏆 CLASIFICACIÓN</button>
+</div>
+<div id="name-modal" class="modal-backdrop web-ui" hidden role="dialog" aria-modal="true" aria-labelledby="name-title">
+    <form id="name-form" class="modal-panel">
+        <h2 id="name-title">ELIGE TU NOMBRE</h2>
+        <p>Este nombre aparecerá en la clasificación en vivo.</p>
+        <input id="name-input" class="name-input" name="playerName" maxlength="16" autocomplete="nickname" placeholder="JUGADOR" aria-describedby="name-error">
+        <div id="name-error" role="alert"></div>
+        <div class="modal-actions">
+            <button class="pixel-button primary" type="submit">GUARDAR Y JUGAR</button>
+            <button id="name-cancel" class="pixel-button" type="button">CANCELAR</button>
+        </div>
+    </form>
+</div>
+<div id="leaderboard-modal" class="modal-backdrop web-ui" hidden role="dialog" aria-modal="true" aria-labelledby="leaderboard-title">
+    <section class="modal-panel">
+        <h2 id="leaderboard-title">🏆 CLASIFICACIÓN EN VIVO</h2>
+        <ol id="leaderboard-list"><li><span>Cargando…</span><strong>—</strong></li></ol>
+        <button id="leaderboard-close" class="pixel-button primary" type="button">CERRAR</button>
+        <div id="network-status" class="network-status">Conectando…</div>
+    </section>
+</div>
 <div id="orient">
     <div>
         <span class="icon">📱</span>
-        Rotate your phone<br>
-        <small style="opacity:0.7">for the best experience</small>
+        Gira tu teléfono<br>
+        <small style="opacity:0.7">para disfrutar de la mejor experiencia</small>
     </div>
 </div>
 <script>
 'use strict';
+
+// ============================================================
+// PLAYER PROFILE + REALTIME LEADERBOARD
+// ============================================================
+const profileControls = document.getElementById('profile-controls');
+const nameButton = document.getElementById('name-button');
+const nameModal = document.getElementById('name-modal');
+const nameForm = document.getElementById('name-form');
+const nameInput = document.getElementById('name-input');
+const nameError = document.getElementById('name-error');
+const leaderboardModal = document.getElementById('leaderboard-modal');
+const leaderboardList = document.getElementById('leaderboard-list');
+const networkStatus = document.getElementById('network-status');
+let playerName = normalizePlayerName(localStorage.getItem('mcc_player_name') || '');
+let leaderboard = [];
+let leaderboardSocket = null;
+let leaderboardRetry = null;
+let startAfterNamePick = false;
+
+function normalizePlayerName(value){
+    return String(value || '').trim().replace(/[^a-zA-Z0-9 _-]/g, '').replace(/\s+/g, ' ').slice(0, 16);
+}
+function updateProfileUI(){ nameButton.textContent = playerName || 'ELIGE NOMBRE'; }
+function openNamePicker(shouldStart = false){
+    startAfterNamePick = shouldStart;
+    nameInput.value = playerName;
+    nameError.textContent = '';
+    nameModal.hidden = false;
+    setTimeout(() => { nameInput.focus(); nameInput.select(); }, 0);
+}
+function closeNamePicker(){ nameModal.hidden = true; startAfterNamePick = false; }
+function requestStartGame(){
+    if (!playerName) openNamePicker(true);
+    else startGame();
+}
+function renderLeaderboard(){
+    leaderboardList.replaceChildren();
+    if (!leaderboard.length){
+        const li = document.createElement('li');
+        li.innerHTML = '<span>Aún no hay puntuaciones</span><strong>—</strong>';
+        leaderboardList.appendChild(li);
+        return;
+    }
+    leaderboard.slice(0, 10).forEach(entry => {
+        const li = document.createElement('li');
+        const name = document.createElement('span');
+        const scoreText = document.createElement('strong');
+        name.textContent = entry.name;
+        scoreText.textContent = `${entry.score} pts`;
+        li.append(name, scoreText);
+        leaderboardList.appendChild(li);
+    });
+}
+function connectLeaderboard(){
+    if (!location.host || leaderboardSocket?.readyState === WebSocket.OPEN) return;
+    clearTimeout(leaderboardRetry);
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    leaderboardSocket = new WebSocket(`${protocol}//${location.host}/ws`);
+    leaderboardSocket.addEventListener('open', () => { networkStatus.textContent = 'Actualizaciones en vivo activas'; });
+    leaderboardSocket.addEventListener('message', event => {
+        try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'leaderboard' && Array.isArray(message.entries)){
+                leaderboard = message.entries;
+                renderLeaderboard();
+            }
+        } catch (error){ console.warn('Invalid leaderboard update', error); }
+    });
+    leaderboardSocket.addEventListener('close', () => {
+        networkStatus.textContent = 'Sin conexión — reconectando…';
+        leaderboardRetry = setTimeout(connectLeaderboard, 2000);
+    });
+    leaderboardSocket.addEventListener('error', () => leaderboardSocket.close());
+}
+function submitRun(){
+    if (!playerName || score <= 0 || !leaderboardSocket || leaderboardSocket.readyState !== WebSocket.OPEN) return;
+    const runId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    leaderboardSocket.send(JSON.stringify({ type:'submitScore', runId, name:playerName, score, distance, bananas:bananaCount }));
+}
+nameForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const nextName = normalizePlayerName(nameInput.value);
+    if (nextName.length < 2){ nameError.textContent = 'Usa al menos 2 letras o números.'; return; }
+    playerName = nextName;
+    localStorage.setItem('mcc_player_name', playerName);
+    updateProfileUI();
+    const shouldStart = startAfterNamePick;
+    closeNamePicker();
+    if (shouldStart) startGame();
+});
+document.getElementById('name-cancel').addEventListener('click', closeNamePicker);
+nameButton.addEventListener('click', () => openNamePicker(false));
+document.getElementById('leaderboard-button').addEventListener('click', () => { leaderboardModal.hidden = false; renderLeaderboard(); });
+document.getElementById('leaderboard-close').addEventListener('click', () => { leaderboardModal.hidden = true; });
+updateProfileUI();
+connectLeaderboard();
 
 // ============================================================
 // CANVAS / RESIZE / LAYOUT
@@ -264,7 +401,7 @@ function ensureHapticSwitch(){
     if (HAPTIC_DEBUG_VISIBLE){
         input.style.cssText = 'appearance:auto;-webkit-appearance:auto;width:60px;height:36px;margin:0;';
         const text = document.createElement('span');
-        text.textContent = 'switch:';
+        text.textContent = 'interruptor:';
         text.style.cssText = 'color:#ffd060;font:bold 12px monospace;';
         label.insertBefore(text, input);
         label.style.cssText = 'position:fixed;bottom:12px;right:12px;padding:6px 10px;background:rgba(0,0,0,0.85);border:2px solid #5a3818;border-radius:8px;z-index:99999;display:flex;align-items:center;gap:6px;';
@@ -274,7 +411,7 @@ function ensureHapticSwitch(){
         // If only the switch directly works → iOS requires the touch to land
         // ON the switch element, .click() from JS won't fire haptic.
         const btn = document.createElement('button');
-        btn.textContent = 'PROG CLICK';
+        btn.textContent = 'CLIC PROGRAMADO';
         btn.style.cssText = 'position:fixed;bottom:60px;right:12px;padding:8px 14px;background:#d07820;color:#fff;font:bold 13px monospace;border:2px solid #5a2008;border-radius:8px;z-index:99999;';
         btn.onclick = () => { try { hapticSwitch.click(); } catch(e){} };
         document.body.appendChild(btn);
@@ -643,8 +780,10 @@ function stopMusic(){
 // ============================================================
 // GAME STATE
 // ============================================================
-const STATE = { MENU:0, PLAYING:1, DEAD:2 };
+const STATE = { MENU:0, PLAYING:1, DEAD:2, WON:3 };
+const TARGET_SCORE = 1000;
 let state = STATE.MENU;
+let levelCompleteFrame = 0;
 
 let worldX = 0;          // distance scrolled
 let speed = INIT_SPEED;  // current px/s
@@ -711,15 +850,19 @@ function pressJump(canvasX, canvasY){
     // events (banana grabs, landings, crashes) onto the player's next tap.
     drainHapticsOnGesture();
     // On menu / game-over, check button hits first
-    if ((state === STATE.MENU || state === STATE.DEAD) && canvasX != null){
+    if ((state === STATE.MENU || state === STATE.DEAD || state === STATE.WON) && canvasX != null){
         if (tryHitButton(canvasX, canvasY)) return;
     }
     if (state === STATE.MENU){
-        startGame();
+        requestStartGame();
         return;
     }
     if (state === STATE.DEAD){
         if (player.deadFrame > 0.6) startGame();
+        return;
+    }
+    if (state === STATE.WON){
+        if (levelCompleteFrame > 0.6) startGame();
         return;
     }
     // Buffered jump + tactile feedback for the jump itself
@@ -769,6 +912,7 @@ function startGame(){
     player.coyote = 0;
     player.bufferedJump = 0;
     player.deadFrame = 0;
+    levelCompleteFrame = 0;
     player.squash = 0;
     player.airTime = 0;
     segments.length = 0;
@@ -798,6 +942,24 @@ function startGame(){
     if (audioCtx) startMusic();
 }
 
+function completeLevel(){
+    if (state !== STATE.PLAYING) return;
+    state = STATE.WON;
+    levelCompleteFrame = 0;
+    distance = Math.floor(worldX / 10);
+    submitRun();
+    stopMusic();
+    haptic('heavy');
+    if (audioCtx && sfxEnabled){
+        playTone(523, 0.14, 'square', 0.20);
+        setTimeout(() => playTone(659, 0.14, 'square', 0.20), 120);
+        setTimeout(() => playTone(784, 0.22, 'square', 0.24), 240);
+    }
+    if (distance > bestDist){ bestDist = distance; localStorage.setItem('mcc_best_d', bestDist); }
+    if (bananaCount > bestBan){ bestBan = bananaCount; localStorage.setItem('mcc_best_b', bestBan); }
+    if (score > bestScore){ bestScore = score; localStorage.setItem('mcc_best_s', bestScore); }
+}
+
 function gameOver(reason){
     if (state !== STATE.PLAYING) return;
     state = STATE.DEAD;
@@ -821,8 +983,9 @@ function gameOver(reason){
         shake = 26;
         flashRed = 1;
     }
-    // Persist best
+    // Persist best and publish this completed run.
     distance = Math.floor(worldX / 10);
+    submitRun();
     if (distance > bestDist){ bestDist = distance; localStorage.setItem('mcc_best_d', bestDist); }
     if (bananaCount > bestBan){ bestBan = bananaCount; localStorage.setItem('mcc_best_b', bestBan); }
     if (score > bestScore){ bestScore = score; localStorage.setItem('mcc_best_s', bestScore); }
@@ -1224,6 +1387,8 @@ function update(dt){
         // continue physics for player falling
         player.vy += GRAVITY * dt;
         player.y += player.vy * dt;
+    } else if (state === STATE.WON){
+        levelCompleteFrame += dt;
     } else if (state === STATE.MENU){
         // Animate bananas in the background scroll
         for (const b of bananas) b.anim += dt * 4;
@@ -1521,6 +1686,11 @@ function checkCollisions(){
                     grav: 0,
                 });
             }
+
+            if (score >= TARGET_SCORE){
+                completeLevel();
+                return;
+            }
         }
     }
 
@@ -1565,6 +1735,7 @@ let frame = 0;
 
 function render(){
     frame++;
+    profileControls.hidden = state !== STATE.MENU;
     activeButtons.length = 0;
     ctx.save();
     if (shake > 0){
@@ -1599,6 +1770,7 @@ function render(){
 
     if (state === STATE.MENU)  drawMenu();
     if (state === STATE.DEAD)  drawGameOver();
+    if (state === STATE.WON)   drawLevelComplete();
     drawVignette();
 }
 
@@ -2466,7 +2638,7 @@ function drawHUD(){
     ctx.font = `bold ${Math.round(11 * k)}px "Courier New", monospace`;
     drawText('PTS', padX, row2Y + 7 * k, '#a07050', '#000');
     ctx.font = `bold ${Math.round(22 * k)}px "Courier New", monospace`;
-    drawText(`${score}`, padX + labelCol, row2Y, C.text, C.textShad);
+    drawText(`${score} / ${TARGET_SCORE}`, padX + labelCol, row2Y, C.text, C.textShad);
 
     // ROW 3 — Distance (label + medium value)
     const row3Y = padY + rowH * 2;
@@ -2540,7 +2712,7 @@ function drawCombo(){
         ctx.fillText(`x${lastBrokenCombo}`, W/2, 70 * k + dropY);
         ctx.font = `bold ${Math.round(16 * k)}px "Courier New", monospace`;
         ctx.fillStyle = '#aaa';
-        ctx.fillText('COMBO LOST', W/2, 110 * k + dropY);
+        ctx.fillText('COMBO PERDIDO', W/2, 110 * k + dropY);
         ctx.restore();
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
@@ -2827,15 +2999,15 @@ function drawMenu(){
     const btnY = isLandscape ? H * 0.66 : H * 0.62;
     drawButton({
         x: W/2 - btnW/2, y: btnY, w: btnW, h: btnH,
-        label: '▶  PLAY',
+        label: '▶  JUGAR',
         primary: true, pulse: true,
-        onTap: startGame,
+        onTap: requestStartGame,
     });
 
     // Hint text under button
     const hintSize = Math.max(11, Math.round(btnH * 0.22));
     ctx.font = `${hintSize}px "Courier New", monospace`;
-    drawText('Tap the screen to jump', W/2, btnY + btnH + 12, '#a07050', '#000');
+    drawText('Toca la pantalla para saltar', W/2, btnY + btnH + 12, '#a07050', '#000');
 
     // === BEST SCORE PANEL (16-bit framed) ===
     if (bestScore > 0 || bestDist > 0){
@@ -2850,12 +3022,54 @@ function drawMenu(){
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.font = `bold ${recSize}px "Courier New", monospace`;
-        drawText('★ HIGH SCORE ★', W/2, badgeY + padY, '#ffd070', '#3a1808');
+        drawText('★ RÉCORD ★', W/2, badgeY + padY, '#ffd070', '#3a1808');
         ctx.font = `${Math.round(recSize * 0.88)}px "Courier New", monospace`;
         drawText(`${bestScore} pts  ·  ${bestDist}m`,
                  W/2, badgeY + padY + lineH, '#f0c878', '#3a1808');
     }
 
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+}
+
+// --- LEVEL COMPLETE ---
+function drawLevelComplete(){
+    const fade = Math.min(0.82, levelCompleteFrame * 1.4);
+    ctx.fillStyle = `rgba(8,4,20,${fade})`;
+    ctx.fillRect(0, 0, W, H);
+    if (levelCompleteFrame < 0.2) return;
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const isPortrait = H > W;
+    const titleSize = fitTextSize('¡NIVEL COMPLETADO!', W - 40, Math.min(W * 0.13, 72));
+    const titleY = H * (isPortrait ? 0.14 : 0.10);
+    ctx.font = `bold ${titleSize}px "Courier New", monospace`;
+    drawText('¡NIVEL COMPLETADO!', W/2, titleY, '#ffe070', '#7a3010');
+
+    const panelW = Math.min(W * 0.85, 400);
+    const panelH = Math.min(H * (isPortrait ? 0.20 : 0.30), 160);
+    const panelX = W/2 - panelW/2;
+    const panelY = titleY + titleSize * 1.45;
+    drawPixelPanel(panelX, panelY, panelW, panelH);
+    ctx.font = `${Math.max(13, Math.round(panelH * 0.13))}px "Courier New", monospace`;
+    drawText(`OBJETIVO: ${TARGET_SCORE} PTS`, W/2, panelY + panelH * 0.12, '#a07050', '#000');
+    ctx.font = `bold ${Math.max(30, Math.round(panelH * 0.36))}px "Courier New", monospace`;
+    drawText(`${score}`, W/2, panelY + panelH * 0.30, '#ffe070', '#3a2008');
+    ctx.font = `${Math.max(14, Math.round(panelH * 0.14))}px "Courier New", monospace`;
+    drawText(`${distance}m  ·  ${bananaCount} plátanos`, W/2, panelY + panelH * 0.75, C.text, C.textShad);
+
+    if (levelCompleteFrame > 0.5){
+        const btnW = Math.min(W * 0.78, 360);
+        const btnH = Math.min(H * (isPortrait ? 0.08 : 0.13), 72);
+        const btnY = H - btnH - H * 0.09;
+        drawButton({
+            x: W/2 - btnW/2, y: btnY, w: btnW, h: btnH,
+            label: '▶  JUGAR DE NUEVO',
+            primary: true, pulse: true,
+            onTap: startGame,
+        });
+    }
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 }
@@ -2873,17 +3087,17 @@ function drawGameOver(){
     const isPortrait = H > W;
 
     // === CRASH! title (top) ===
-    const crashSize = fitTextSize('CRASH!', W - 60, Math.min(W * 0.18, 90));
+    const crashSize = fitTextSize('¡CHOQUE!', W - 60, Math.min(W * 0.18, 90));
     ctx.font = `bold ${crashSize}px "Courier New", monospace`;
     ctx.lineWidth = Math.max(4, crashSize * 0.10);
     ctx.strokeStyle = '#1a0204';
     const crashY = H * (isPortrait ? 0.07 : 0.14);
-    ctx.strokeText('CRASH!', W/2, crashY);
+    ctx.strokeText('¡CHOQUE!', W/2, crashY);
     const tg = ctx.createLinearGradient(0, crashY, 0, crashY + crashSize);
     tg.addColorStop(0, '#ff9050');
     tg.addColorStop(1, '#9a1010');
     ctx.fillStyle = tg;
-    ctx.fillText('CRASH!', W/2, crashY);
+    ctx.fillText('¡CHOQUE!', W/2, crashY);
 
     // === SCORE PANEL — sized so values fit comfortably ===
     const panelW = Math.min(W * 0.85, 380);
@@ -2900,13 +3114,13 @@ function drawGameOver(){
     const sideSize = Math.max(16, Math.round(panelH * 0.24));
     // Center: SCORE
     ctx.font = `${labelSize}px "Courier New", monospace`;
-    drawText('SCORE', W/2, panelY + panelH * 0.10, '#a07050', '#000');
+    drawText('PUNTOS', W/2, panelY + panelH * 0.10, '#a07050', '#000');
     ctx.font = `bold ${bigSize}px "Courier New", monospace`;
     drawText(`${score}`, W/2, panelY + panelH * 0.32, '#ffe070', '#3a2008');
     // Sides: distance + bananas
     ctx.font = `${labelSize * 0.85}px "Courier New", monospace`;
-    drawText('DISTANCE', panelX + panelW * 0.20, panelY + panelH * 0.72, '#a07050', '#000');
-    drawText('BANANAS',   panelX + panelW * 0.80, panelY + panelH * 0.72, '#a07050', '#000');
+    drawText('DISTANCIA', panelX + panelW * 0.20, panelY + panelH * 0.72, '#a07050', '#000');
+    drawText('PLÁTANOS',  panelX + panelW * 0.80, panelY + panelH * 0.72, '#a07050', '#000');
     ctx.font = `bold ${sideSize}px "Courier New", monospace`;
     drawText(`${distance}m`,    panelX + panelW * 0.20, panelY + panelH * 0.86, C.text, C.textShad);
     drawText(`${bananaCount}`,  panelX + panelW * 0.80, panelY + panelH * 0.86, C.text, C.textShad);
@@ -2921,11 +3135,11 @@ function drawGameOver(){
         const flash = 0.65 + 0.35 * Math.sin(frame * 0.25);
         ctx.font = `bold ${recSize}px "Courier New", monospace`;
         ctx.globalAlpha = flash;
-        drawText('★ NEW HIGH SCORE ★', W/2, recY, '#ffd070', '#7a3010');
+        drawText('★ NUEVO RÉCORD ★', W/2, recY, '#ffd070', '#7a3010');
         ctx.globalAlpha = 1;
     } else {
         ctx.font = `${recSize}px "Courier New", monospace`;
-        drawText(`Best: ${bestScore} pts · ${bestDist}m`,
+        drawText(`Récord: ${bestScore} pts · ${bestDist}m`,
                  W/2, recY, '#a07050', '#000');
     }
 
@@ -2939,13 +3153,13 @@ function drawGameOver(){
         const btn1Y = btn2Y - gap - btnH;
         drawButton({
             x: W/2 - btnW/2, y: btn1Y, w: btnW, h: btnH,
-            label: '↻  PLAY AGAIN',
+            label: '↻  JUGAR DE NUEVO',
             primary: true, pulse: true,
             onTap: startGame,
         });
         drawButton({
             x: W/2 - btnW/2, y: btn2Y, w: btnW, h: btnH2,
-            label: 'MENU',
+            label: 'MENÚ',
             primary: false,
             onTap: () => { state = STATE.MENU; initMenuWorld(); },
         });
