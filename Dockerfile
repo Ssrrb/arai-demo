@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-COPY --chown=node:node server.js index.html ./
+COPY --chown=node:node server.js profanity.js index.html ./
 COPY --chown=node:node assets ./assets
 
 USER node

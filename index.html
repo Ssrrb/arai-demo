@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0418">
-<title>Mine Cart Carnage: Infinito</title>
+<title>No Te Caigas: Infinito</title>
 <style>
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{
@@ -360,7 +360,7 @@ const SPRITE_PATHS = {
     megabanana: 'assets/megabanana.png',
     explosion:  'assets/explosion.png',
     apeLose:    'assets/ape_lose.png',
-    title:      'assets/title.png',
+    title:      'assets/title.png?v=no-te-caigas',
     caveBG:     'assets/cavebg.png',
 };
 let spritesReady = false;
@@ -3002,7 +3002,7 @@ function drawMenu(){
         titleH = drawH;
     } else {
         // Fallback: pixel-text title
-        const lines = isLandscape ? ['CAOS EN LA VAGONETA'] : ['CAOS EN LA', 'VAGONETA'];
+        const lines = ['NO TE', 'CAIGAS'];
         const longest = lines.reduce((a, b) => a.length > b.length ? a : b);
         const cap = isLandscape ? Math.min(W * 0.07, H * 0.18, 72)
                                 : Math.min(W * 0.15, H * 0.10, 84);
