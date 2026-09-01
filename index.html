@@ -3032,9 +3032,11 @@ function drawMenu(){
         onTap: requestStartGame,
     });
 
-    // Hint text under button
+    // drawButton restores left alignment, so explicitly re-center the hint.
     const hintSize = Math.max(11, Math.round(btnH * 0.22));
     ctx.font = `${hintSize}px "Courier New", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
     drawText('Toca la pantalla para saltar', W/2, btnY + btnH + 12, '#a07050', '#000');
 
     // === BEST SCORE PANEL (16-bit framed) ===

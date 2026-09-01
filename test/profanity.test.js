@@ -7,6 +7,9 @@ const { hasProfanity } = require('../profanity');
 test('detects direct and uppercase profanity', () => {
   assert.equal(hasProfanity('Puta'), true);
   assert.equal(hasProfanity('hijoputa'), true);
+  for (const word of ['gay', 'tatu', 'tembo', 'tevi', 'pelotudo', 'imbécil']) {
+    assert.equal(hasProfanity(word), true, `${word} should be blocked`);
+  }
 });
 
 test('detects common numeric and repetition evasions', () => {
