@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0a0418">
-<title>No Te Caigas: Infinito</title>
+<meta name="theme-color" content="#09090b">
+<meta name="description" content="TUKU: No Te Caigas — supera las pruebas de agarre, rebote y resistencia del TUKU Lab.">
+<title>TUKU: No Te Caigas</title>
 <style>
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{
@@ -23,12 +24,13 @@
     #wrap{
         position:fixed;inset:0;
         display:flex;align-items:center;justify-content:center;
-        background:radial-gradient(ellipse at center,#0a0418 0%,#000 100%);
+        background:radial-gradient(ellipse at center,#10243a 0%,#09090b 72%,#000 100%);
     }
     canvas{
         display:block;
-        image-rendering:auto;
-        box-shadow:0 0 40px rgba(80,40,150,0.3);
+        image-rendering:pixelated;
+        image-rendering:crisp-edges;
+        box-shadow:0 0 40px rgba(0,194,255,0.18);
         max-width:100vw;max-height:100vh;
         position:relative;
     }
@@ -55,24 +57,35 @@
     .web-ui{font-family:'Courier New',monospace}
     #profile-controls{position:fixed;top:max(12px,env(safe-area-inset-top));right:12px;z-index:8;display:flex;gap:8px;align-items:center}
     #profile-controls[hidden]{display:none}
-    .pixel-button{border:2px solid #1a0c04;border-radius:0;background:#6a3212;color:#ffe090;padding:8px 10px;font-weight:bold;box-shadow:3px 3px #000;cursor:pointer}
-    .pixel-button.primary{background:#d07820;color:#fff}
+    .pixel-button{border:2px solid #263746;border-radius:0;background:#101820;color:#cbd5e1;padding:8px 10px;font-weight:bold;box-shadow:3px 3px #000;cursor:pointer}
+    .pixel-button.primary{background:#00c2ff;color:#07131d}
     .pixel-button:focus-visible,.name-input:focus-visible{outline:3px solid #ffe070;outline-offset:2px}
     .modal-backdrop{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(5,2,14,.88);touch-action:auto}
     .modal-backdrop[hidden]{display:none}
-    .modal-panel{width:min(440px,100%);max-height:min(680px,90vh);overflow:auto;border:4px solid #5a3818;background:#1b0d24;color:#f5d090;padding:24px;box-shadow:8px 8px #000;text-align:center}
-    .modal-panel h2{color:#ffe070;margin-bottom:12px}.modal-panel p{margin-bottom:16px;line-height:1.4;color:#d4a070}
-    .name-input{width:100%;border:3px solid #7a4a26;border-radius:0;background:#090411;color:#fff;padding:12px;font:700 20px 'Courier New',monospace;text-align:center;text-transform:uppercase;margin-bottom:14px}
+    .modal-panel{width:min(440px,100%);max-height:min(680px,90vh);overflow:auto;border:4px solid #263746;background:#08111a;color:#cbd5e1;padding:24px;box-shadow:8px 8px #000;text-align:center}
+    .modal-panel h2{color:#00c2ff;margin-bottom:12px}.modal-panel p{margin-bottom:16px;line-height:1.4;color:#94a3b8}
+    .name-input{width:100%;border:3px solid #475569;border-radius:0;background:#03080d;color:#fff;padding:12px;font:700 20px 'Courier New',monospace;text-align:center;text-transform:uppercase;margin-bottom:14px}
     .modal-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     #name-error{min-height:20px;color:#ff8060;margin:-5px 0 10px}
     #leaderboard-list{list-style:none;text-align:left;margin:16px 0;counter-reset:rank}
     #leaderboard-list li{counter-increment:rank;display:grid;grid-template-columns:2.2em 1fr auto;gap:8px;padding:9px 4px;border-bottom:1px solid #4a2818}
     #leaderboard-list li::before{content:counter(rank) '.';color:#a07050}
     .network-status{font-size:12px;color:#a07050;margin-top:12px}
+    #shop-cta{
+        position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));z-index:12;
+        transform:translateX(-50%);display:none;min-width:min(360px,calc(100vw - 36px));
+        padding:14px 18px;border:3px solid #07131d;background:#00c2ff;color:#07131d;
+        box-shadow:5px 5px #000;font:900 15px 'Courier New',monospace;text-align:center;
+        text-decoration:none;text-transform:uppercase;letter-spacing:.04em;
+    }
+    #shop-cta[data-visible="true"]{display:block}
+    #shop-cta:focus-visible{outline:3px solid #fff;outline-offset:4px}
+    @media (orientation:portrait){#shop-cta{bottom:max(24px,env(safe-area-inset-bottom));font-size:18px;padding:17px 18px}}
 </style>
 </head>
 <body>
 <div id="wrap"><canvas id="game"></canvas></div>
+<a id="shop-cta" href="https://arai-mic-web-390294125906.us-east1.run.app/" rel="noopener">VER EN TUKU</a>
 <div id="profile-controls" class="web-ui" hidden>
     <button id="name-button" class="pixel-button" type="button">JUGADOR</button>
     <button id="leaderboard-button" class="pixel-button primary" type="button">🏆 CLASIFICACIÓN</button>
@@ -107,6 +120,49 @@
 <script>
 'use strict';
 
+const SHOP_URL = 'https://arai-mic-web-390294125906.us-east1.run.app/';
+const SELECTED_EDITION_KEY = 'tuku_selected_edition';
+const TUKU_EDITIONS = [
+    {
+        id:'nebula', name:'NEBULA', subtitle:'CINÉTICA CÓSMICA PRO',
+        description:'Canales luminosos y respuesta cinética.',
+        color:'#00c2ff', dark:'#031d2c', sprite:'ballNebula',
+    },
+    {
+        id:'fuego', name:'FUEGO', subtitle:'ALTA VISIBILIDAD',
+        description:'Agarre veloz y energía volcánica.',
+        color:'#ff5722', dark:'#200b04', sprite:'ballFuego',
+    },
+    {
+        id:'oro', name:'ORO', subtitle:'TROFEO DE CAMPEONATO',
+        description:'Retorno élite y precisión de campeón.',
+        color:'#f59e0b', dark:'#1f1604', sprite:'ballOro',
+    },
+    {
+        id:'metal', name:'METAL', subtitle:'ASFALTO FURTIVO PRO',
+        description:'Control firme en cualquier superficie.',
+        color:'#cbd5e1', dark:'#0f141c', sprite:'ballMetal',
+    },
+];
+const storedEdition = localStorage.getItem(SELECTED_EDITION_KEY);
+let selectedEditionId = TUKU_EDITIONS.some(item => item.id === storedEdition) ? storedEdition : 'nebula';
+function selectedEdition(){
+    return TUKU_EDITIONS.find(item => item.id === selectedEditionId) || TUKU_EDITIONS[0];
+}
+function selectEdition(id){
+    if (!TUKU_EDITIONS.some(item => item.id === id)) return;
+    selectedEditionId = id;
+    localStorage.setItem(SELECTED_EDITION_KEY, id);
+    syncShopCTA();
+}
+function syncShopCTA(){
+    const edition = selectedEdition();
+    shopCta.href = SHOP_URL;
+    shopCta.textContent = `VER ${edition.name} EN TUKU`;
+    shopCta.style.backgroundColor = edition.color;
+    shopCta.dataset.visible = state === STATE.WON ? 'true' : 'false';
+}
+
 // ============================================================
 // PLAYER PROFILE + REALTIME LEADERBOARD
 // ============================================================
@@ -119,6 +175,7 @@ const nameError = document.getElementById('name-error');
 const leaderboardModal = document.getElementById('leaderboard-modal');
 const leaderboardList = document.getElementById('leaderboard-list');
 const networkStatus = document.getElementById('network-status');
+const shopCta = document.getElementById('shop-cta');
 let playerName = normalizePlayerName(localStorage.getItem('mcc_player_name') || '');
 let leaderboard = [];
 let leaderboardSocket = null;
@@ -285,7 +342,7 @@ function resize(){
     canvas.width = Math.floor(W * dpr);
     canvas.height = Math.floor(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingEnabled = false;
     // If orientation flipped while a game is running, restart the world so all
     // segments use the new TIERS. (Score is reset — small price for consistency.)
     if (wasPortrait !== null && wasPortrait !== isPortrait){
@@ -313,33 +370,20 @@ const COYOTE_TIME = 0.10;         // forgiveness after walking off edge
 const JUMP_BUFFER = 0.13;         // forgiveness for early jumps
 const MAX_REACHABLE_LIFT = 110;   // banana arc cap above local ground
 
-// Colors (DKC mood)
+// TUKU Lab palette. The selected edition adds the active accent at render time.
 const C = {
-    skyTop:    '#0a0418',
-    skyBot:    '#2a1248',
-    fogPurple: '#3a1d5e',
-    fogBlue:   '#1a2050',
-    farCave:   '#0d0820',
-    midCave:   '#1a0e35',
-    nearCave:  '#0a0418',
-    plank:     '#5a3216',
-    plankDark: '#2d1808',
-    plankLight:'#7a4a26',
-    rail:      '#7a7a7a',
-    railDark:  '#2a2a2a',
-    cartWood:  '#6b3410',
-    cartDark:  '#2d1408',
-    cartIron:  '#181818',
-    apeFur:    '#4a2810',
-    apeFurLt:  '#6b3a18',
-    apeFace:   '#c9a370',
-    tieRed:    '#c52020',
-    tieRedDk:  '#7a1010',
-    banana:    '#ffd84a',
-    bananaDk:  '#c98e1a',
-    barrel:    '#7a4218',
-    barrelDk:  '#3a1e08',
-    barrelMet: '#9a9a9a',
+    skyTop:    '#05090e',
+    skyBot:    '#101b28',
+    fogPurple: '#16283a',
+    fogBlue:   '#0d3550',
+    farCave:   '#080d14',
+    midCave:   '#101b28',
+    nearCave:  '#05090e',
+    plank:     '#263746',
+    plankDark: '#0b1118',
+    plankLight:'#496175',
+    rail:      '#a8b7c5',
+    railDark:  '#26323d',
     sparkY:    '#ffe070',
     crash:     '#ff5040',
     text:      '#f5d090',
@@ -351,17 +395,16 @@ const C = {
 // ============================================================
 const SPRITES = {};
 const SPRITE_PATHS = {
-    banana:     'assets/banana.png',
-    cart:       'assets/cart.png',
-    ape:        'assets/ape.png',
-    barrel:     'assets/barrel.png',
-    enemy:      'assets/enemy.png',
-    wheel:      'assets/wheel.png',
-    megabanana: 'assets/megabanana.png',
-    explosion:  'assets/explosion.png',
-    apeLose:    'assets/ape_lose.png',
-    title:      'assets/title.png?v=no-te-caigas',
-    caveBG:     'assets/cavebg.png',
+    ballNebula:       'assets/tuku/ball-nebula.png',
+    ballFuego:        'assets/tuku/ball-fuego.png',
+    ballOro:          'assets/tuku/ball-oro.png',
+    ballMetal:        'assets/tuku/ball-metal.png',
+    performanceToken: 'assets/tuku/performance-token.png',
+    certificationCore:'assets/tuku/certification-core.png',
+    impactBlock:      'assets/tuku/impact-block.png',
+    calibrationDrone: 'assets/tuku/calibration-drone.png',
+    impactWave:       'assets/tuku/impact-wave.png',
+    labBG:            'assets/tuku/lab-background.png',
 };
 let spritesReady = false;
 function loadSprites(cb){
@@ -624,7 +667,7 @@ function sfxCrash(){
     osc.start(t); osc.stop(t + 0.55);
 }
 
-// Tense mine-cart loop (David Wise inspired): A minor, fast 16ths, 8-bar
+// Tense TUKU Lab test-run loop: A minor, fast 16ths, 8-bar
 // pattern with 4 distinct sections (A, B, A', C) so it doesn't feel monotonous.
 function startMusic(){
     if (!audioCtx || !musicEnabled) return;
@@ -639,7 +682,7 @@ function startMusic(){
 
     // BASS — 4 sections
     const bassSections = [
-        // A: chromatic descent A1 → E1 → D1, classic mine cart descent
+        // A: chromatic descent A1 → E1 → D1, kinetic test-run pulse
         [55, 0, 55,55, 55, 0, 52,52, 55, 0, 55,55, 49, 0, 49,49,
          46, 0, 46,46, 44, 0, 44,44, 41,41,41, 0, 37,37,46,52],
         // B: D minor center, octave pump — D1/D2 alternating with walk
@@ -812,6 +855,7 @@ const STATE = { MENU:0, PLAYING:1, DEAD:2, WON:3 };
 const TARGET_SCORE = 1000;
 let state = STATE.MENU;
 let levelCompleteFrame = 0;
+syncShopCTA();
 
 let worldX = 0;          // distance scrolled
 let speed = INIT_SPEED;  // current px/s
@@ -819,10 +863,10 @@ let timePlaying = 0;     // seconds in current run
 
 // Player
 const player = {
-    y: GROUND_Y - 50,
+    y: GROUND_Y - 54,
     vy: 0,
-    h: 50,
-    w: 64,
+    h: 54,
+    w: 54,
     onGround: true,
     coyote: 0,
     bufferedJump: 0,
@@ -834,7 +878,7 @@ const player = {
 // World objects
 let segments = [];   // { x, w, type: 'TRACK'|'GAP', danger:bool }
 let bananas = [];    // { x, y, taken, anim }
-let obstacles = [];  // { x, y, type:'BARREL'|'CART_ENEMY', vx, hit }
+let obstacles = [];  // { x, y, type:'IMPACT_BLOCK'|'CALIBRATION_DRONE', vx, hit }
 let particles = [];  // visual only
 let nextSpawnX = 0;
 
@@ -851,7 +895,7 @@ let flashRed = 0;
 let flyingBananas = [];   // visual: bananas flying to HUD on collect
 let hudPulse = 0;         // 0..1, pulses when a banana arrives at the counter
 let explosions = [];      // {x, y, t, dur} — TNT explosion FX
-let deathReason = null;   // 'fall' | 'hit-barrel' | 'hit-cart' — drives game-over visuals
+let deathReason = null;   // 'fall' | 'hit-impact' | 'hit-drone' — drives game-over visuals
 
 // Combo system
 let combo = 0;
@@ -930,6 +974,7 @@ canvas.addEventListener('mouseup',    e => { e.preventDefault(); releaseJump(); 
 // ============================================================
 function startGame(){
     state = STATE.PLAYING;
+    syncShopCTA();
     worldX = 0;
     speed = INIT_SPEED;
     timePlaying = 0;
@@ -973,6 +1018,7 @@ function startGame(){
 function completeLevel(){
     if (state !== STATE.PLAYING) return;
     state = STATE.WON;
+    syncShopCTA();
     levelCompleteFrame = 0;
     distance = Math.floor(worldX / 10);
     submitRun();
@@ -991,6 +1037,7 @@ function completeLevel(){
 function gameOver(reason){
     if (state !== STATE.PLAYING) return;
     state = STATE.DEAD;
+    syncShopCTA();
     deathReason = reason || 'fall';
     breakCombo();
     player.deadFrame = 0;
@@ -1000,7 +1047,7 @@ function gameOver(reason){
     haptic('heavy');
     stopMusic();
     // TNT hit triggers a big explosion at the player position
-    if (reason === 'hit-barrel'){
+    if (reason === 'hit-impact'){
         explosions.push({
             x: worldX + PLAYER_X + 32,   // world coords
             y: player.y + 18,
@@ -1125,12 +1172,12 @@ function spawnAhead(){
             const MEGA_LIFT = 56;  // px above ground (well clear of regulars at -30)
 
             if (variant === 0){
-                // A: classic — mega on high, bonus bananas, optional low barrel
+                // A: certification core on high rail, optional impact block below
                 const megaX = nextSpawnX + w * 0.5;
                 spawnGroundLine(nextSpawnX + 80, nextSpawnX + w - 80, yHigh, rint(3, 4), megaX, MEGA_SKIP);
                 spawnMegaBanana(megaX, yHigh - MEGA_LIFT);
                 if (Math.random() < 0.45){
-                    obstacles.push({ x: nextSpawnX + w * 0.5, y: yLow, type: 'BARREL', vx: 0, hit: false });
+                    obstacles.push({ x: nextSpawnX + w * 0.5, y: yLow, type: 'IMPACT_BLOCK', vx: 0, hit: false });
                 }
             } else if (variant === 1){
                 // B: ENEMY ON HIGH — mega still up there, but you have to dodge
@@ -1139,17 +1186,17 @@ function spawnAhead(){
                 spawnMegaBanana(megaX, yHigh - MEGA_LIFT);
                 obstacles.push({
                     x: nextSpawnX + w + rand(80, 200),
-                    y: yHigh, type: 'CART_ENEMY',
+                    y: yHigh, type: 'CALIBRATION_DRONE',
                     vx: -(120 + d * 160), hit: false,
                 });
             } else if (variant === 2){
-                // C: BARREL ON LOW — high is the safe escape
+                // C: IMPACT BLOCK ON LOW — high is the safe escape
                 const megaX = nextSpawnX + w * 0.6;
                 spawnGroundLine(nextSpawnX + 80, nextSpawnX + w - 80, yHigh, rint(3, 5), megaX, MEGA_SKIP);
                 spawnMegaBanana(megaX, yHigh - MEGA_LIFT);
                 obstacles.push({
                     x: nextSpawnX + w * (0.40 + Math.random() * 0.2),
-                    y: yLow, type: 'BARREL', vx: 0, hit: false,
+                    y: yLow, type: 'IMPACT_BLOCK', vx: 0, hit: false,
                 });
             } else if (variant === 3){
                 // D: GAP IN LOW — middle has only the HIGH rail; low is abyss
@@ -1241,7 +1288,7 @@ function spawnAhead(){
             if (Math.random() < 0.32 + d * 0.20 && w > 180){
                 obstacles.push({
                     x: nextSpawnX + w * (0.4 + Math.random() * 0.3),
-                    y: lastY, type: 'BARREL', vx: 0, hit: false,
+                    y: lastY, type: 'IMPACT_BLOCK', vx: 0, hit: false,
                 });
             }
             if (Math.random() < 0.30){
@@ -1315,13 +1362,13 @@ function spawnAhead(){
 
             nextSpawnX = gapX + gw + lw;
         } else {
-            // TRACK with oncoming cart enemy — shorter approach
+            // TRACK with oncoming calibration drone — shorter approach
             const w = rand(180, 300);
             segments.push({ x: nextSpawnX, w, type:'TRACK', y: lastY });
             obstacles.push({
                 x: nextSpawnX + w + rand(80, 200),
                 y: lastY,
-                type: 'CART_ENEMY',
+                type: 'CALIBRATION_DRONE',
                 vx: -(80 + d * 140),
                 hit: false,
             });
@@ -1594,7 +1641,7 @@ function updateObstacles(dt){
         // Carts ride the rail — snap their y to whatever surface is under them
         // (when they spawn, the world ahead can change before they reach the
         // player, leaving them "floating" if we don't re-check each frame).
-        if (o.type === 'CART_ENEMY'){
+        if (o.type === 'CALIBRATION_DRONE'){
             const g = groundAt(o.x, o.y);
             if (g !== null) o.y = g;
             // If over a gap, leave o.y at last good value — they'll be off
@@ -1726,15 +1773,15 @@ function checkCollisions(){
     for (const o of obstacles){
         if (o.hit) continue;
         let ox, oy, ow, oh;
-        if (o.type === 'BARREL'){
+        if (o.type === 'IMPACT_BLOCK'){
             ox = o.x - 18; oy = o.y - 36; ow = 36; oh = 36;
         } else {
-            // Enemy cart hitbox: matches its bigger visual now
+            // Calibration drone hitbox matches its wider visual.
             ox = o.x - 36; oy = o.y - 50; ow = 72; oh = 50;
         }
         if (aabb(px, py, pw, ph, ox, oy, ow, oh)){
-            // Land on top of an oncoming cart → bounce off it.
-            if (o.type === 'CART_ENEMY' && player.vy > 0 && py + ph - 12 < oy){
+            // Land on top of an oncoming drone → bounce off it.
+            if (o.type === 'CALIBRATION_DRONE' && player.vy > 0 && py + ph - 12 < oy){
                 player.vy = JUMP_VEL * 0.85;
                 o.hit = true;
                 sfxJump();
@@ -1751,7 +1798,7 @@ function checkCollisions(){
                 continue;
             }
             o.hit = true;
-            gameOver(o.type === 'BARREL' ? 'hit-barrel' : 'hit-cart');
+            gameOver(o.type === 'IMPACT_BLOCK' ? 'hit-impact' : 'hit-drone');
         }
     }
 }
@@ -1773,7 +1820,7 @@ function render(){
         );
     }
     drawSky();
-    drawCaveWallBG();
+    drawLabBackground();
     // All procedural silhouette layers (far / mid / near) removed — they used
     // hardcoded y values that floated weirdly in portrait, and the cave-wall
     // sprite already provides all the depth/atmosphere we need.
@@ -1786,10 +1833,12 @@ function render(){
     ctx.restore();
 
     drawComboVignette();   // golden glow at edges, scales with combo
-    drawHUD();
-    drawCombo();           // combo counter + radial timer ring
-    drawFloatTexts();      // "+N" multiplier popups
-    drawFlyingBananas();   // bananas en route to the counter, drawn over HUD
+    if (state !== STATE.MENU){
+        drawHUD();
+        drawCombo();           // combo counter + radial timer ring
+        drawFloatTexts();      // "+N" multiplier popups
+        drawFlyingBananas();   // performance tokens en route to the counter
+    }
 
     if (flashRed > 0){
         ctx.fillStyle = `rgba(255,40,30,${flashRed * 0.45})`;
@@ -1803,8 +1852,8 @@ function render(){
 }
 
 // --- BACKGROUND LAYERS ---
-function drawCaveWallBG(){
-    const spr = SPRITES.caveBG;
+function drawLabBackground(){
+    const spr = SPRITES.labBG;
     if (!spr) return;
     // Tile horizontally with slow parallax. Sized to fill most of vertical space.
     const drawH = H * 0.85;
@@ -1817,23 +1866,30 @@ function drawCaveWallBG(){
         ctx.drawImage(spr, x, y, drawW, drawH);
         x += drawW;
     }
-    // Slight tint overlay to push it back / unify with our palette
-    ctx.fillStyle = 'rgba(20, 8, 40, 0.35)';
+    // Darken the lab and wash its practical lights with the active edition.
+    ctx.fillStyle = 'rgba(4, 8, 13, 0.32)';
+    ctx.fillRect(0, 0, W, H);
+    const edition = selectedEdition();
+    const accent = ctx.createRadialGradient(W * 0.58, H * 0.52, 10, W * 0.58, H * 0.52, W * 0.62);
+    accent.addColorStop(0, `${edition.color}28`);
+    accent.addColorStop(1, `${edition.color}00`);
+    ctx.fillStyle = accent;
     ctx.fillRect(0, 0, W, H);
 }
 
 function drawSky(){
     const g = ctx.createLinearGradient(0, 0, 0, H);
+    const edition = selectedEdition();
     g.addColorStop(0, C.skyTop);
-    g.addColorStop(0.55, '#1a0e35');
+    g.addColorStop(0.55, edition.dark);
     g.addColorStop(1, C.skyBot);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
     // Distant glow
     const rg = ctx.createRadialGradient(W*0.5, H*0.85, 50, W*0.5, H*0.85, 400);
-    rg.addColorStop(0, 'rgba(120,60,180,0.18)');
-    rg.addColorStop(1, 'rgba(120,60,180,0)');
+    rg.addColorStop(0, `${edition.color}20`);
+    rg.addColorStop(1, `${edition.color}00`);
     ctx.fillStyle = rg;
     ctx.fillRect(0, 0, W, H);
 }
@@ -2083,23 +2139,16 @@ function drawTrack(){
     }
 }
 
-// --- BANANAS ---
-// In-world bananas are rotated to a near-vertical pose (DKC style) instead
-// of the sprite's natural horizontal lay. The HUD banana keeps its own rot.
-const BANANA_BASE_ROT = -Math.PI / 2.6;   // ~70° CCW, close to upright
-
+// --- PERFORMANCE TOKENS ---
 function drawBananas(){
     for (const b of bananas){
-        if (b.taken) continue;  // taken bananas fly to the HUD instead
+        if (b.taken) continue;
         const sx = b.x - worldX;
-        if (sx < -40 || sx > W + 40) continue;
+        if (sx < -50 || sx > W + 50) continue;
         const bob = Math.sin(b.anim) * 4;
-        const rot = BANANA_BASE_ROT + Math.sin(b.anim * 0.7) * 0.18;
-        if (b.mega){
-            drawMegaBanana(sx, b.y + bob, rot);
-        } else {
-            drawBanana(sx, b.y + bob, 1, rot);
-        }
+        const rot = b.mega ? Math.sin(b.anim * 0.45) * 0.12 : b.anim * 0.35;
+        if (b.mega) drawMegaBanana(sx, b.y + bob, rot);
+        else drawBanana(sx, b.y + bob, 1, rot);
     }
 }
 
@@ -2107,61 +2156,50 @@ function drawMegaBanana(x, y, rot){
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(rot);
-    const spr = SPRITES.megabanana;
+    const spr = SPRITES.certificationCore;
+    const pulse = 0.5 + Math.sin(frame * 0.18) * 0.5;
+    ctx.fillStyle = `rgba(245, 158, 11, ${0.16 + pulse * 0.16})`;
+    ctx.beginPath(); ctx.arc(0, 0, 34 + pulse * 4, 0, Math.PI * 2); ctx.fill();
     if (spr){
-        const w = 56, h = w * spr.height / spr.width;
-        // Pulsing glow behind
-        const pulse = 0.5 + Math.sin(frame * 0.18) * 0.5;
-        ctx.fillStyle = `rgba(255, 240, 120, ${0.18 + pulse * 0.12})`;
-        ctx.beginPath(); ctx.arc(0, 0, 30 + pulse * 4, 0, Math.PI * 2); ctx.fill();
+        const h = 58, w = h * spr.width / spr.height;
         ctx.drawImage(spr, -w/2, -h/2, w, h);
     } else {
-        // Fallback: enlarged regular banana
-        ctx.scale(2.2, 2.2);
-        ctx.fillStyle = '#d4a020';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 10, 5, Math.PI / 5, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(-18, -18, 36, 36);
     }
     ctx.restore();
 }
 
 function drawExplosions(){
-    const spr = SPRITES.explosion;
+    const spr = SPRITES.impactWave;
     for (const e of explosions){
         const tt = e.t / e.dur;
         const sx = e.x - worldX;
-        // Scale: punch out fast, hold, fade
-        const sc = (e.scale || 1.4) * (tt < 0.2 ? tt / 0.2 * 1.2 : (tt < 0.7 ? 1.2 - (tt - 0.2) * 0.4 : 1.0));
-        const alpha = tt < 0.7 ? 1 : 1 - (tt - 0.7) / 0.3;
-        const rot = tt * 0.6;  // gentle rotation
+        const sc = (e.scale || 1.4) * (tt < 0.2 ? tt / 0.2 * 1.2 : 1.2 - (tt - 0.2) * 0.25);
+        const alpha = tt < 0.65 ? 1 : 1 - (tt - 0.65) / 0.35;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.translate(sx, e.y);
+        ctx.rotate(tt * 0.8);
         if (spr){
-            const w = 140 * sc, h = 140 * sc * spr.height / spr.width;
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, alpha);
-            ctx.translate(sx, e.y);
-            ctx.rotate(rot);
+            const w = 126 * sc, h = w * spr.height / spr.width;
             ctx.drawImage(spr, -w/2, -h/2, w, h);
-            ctx.restore();
         } else {
-            // Fallback: bright orange burst
-            ctx.fillStyle = `rgba(255, 180, 50, ${alpha * 0.8})`;
-            ctx.beginPath();
-            ctx.arc(sx, e.y, 60 * sc, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.strokeStyle = selectedEdition().color;
+            ctx.lineWidth = 8;
+            ctx.beginPath(); ctx.arc(0, 0, 48 * sc, 0, Math.PI * 2); ctx.stroke();
         }
+        ctx.restore();
     }
 }
 
-// Bananas in flight to the HUD counter (drawn after HUD so they overlay)
 function drawFlyingBananas(){
     for (const f of flyingBananas){
         const tt = Math.max(0, f.t) / f.dur;
-        const ease = 1 - (1 - tt) * (1 - tt);  // ease-out
+        const ease = 1 - (1 - tt) * (1 - tt);
         const x = f.x0 + (f.x1 - f.x0) * ease;
         const baseY = f.y0 + (f.y1 - f.y0) * ease;
-        const arc = -Math.sin(tt * Math.PI) * 90;  // upward bow
-        drawBanana(x, baseY + arc, 1, f.spin);
+        drawBanana(x, baseY - Math.sin(tt * Math.PI) * 90, 1, f.spin);
     }
 }
 
@@ -2170,445 +2208,106 @@ function drawBanana(x, y, alpha, rot){
     ctx.translate(x, y);
     ctx.rotate(rot);
     ctx.globalAlpha = alpha;
-    const spr = SPRITES.banana;
+    const spr = SPRITES.performanceToken;
     if (spr){
-        // Banana sprite is wider than tall; aim for ~28px wide on screen
-        const w = 32, h = w * spr.height / spr.width;
+        const w = 30, h = w * spr.height / spr.width;
         ctx.drawImage(spr, -w/2, -h/2, w, h);
     } else {
-        // Fallback: primitive
-        ctx.fillStyle = C.bananaDk;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 10, 5, Math.PI / 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = C.banana;
-        ctx.lineWidth = 5;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(-9, 4);
-        ctx.quadraticCurveTo(-3, -7, 9, -3);
-        ctx.stroke();
+        ctx.fillStyle = selectedEdition().color;
+        ctx.fillRect(-9, -9, 18, 18);
     }
     ctx.restore();
 }
 
-// --- OBSTACLES ---
+// --- TEST OBSTACLES ---
 function drawObstacles(){
     for (const o of obstacles){
         const sx = o.x - worldX;
-        if (sx < -100 || sx > W + 100) continue;
-        if (o.type === 'BARREL'){
-            drawBarrel(sx, o.y);
-        } else if (o.type === 'CART_ENEMY'){
-            drawEnemyCartSprite(sx, o.y);
-        }
+        if (sx < -120 || sx > W + 120) continue;
+        if (o.type === 'IMPACT_BLOCK') drawImpactBlock(sx, o.y);
+        else if (o.type === 'CALIBRATION_DRONE') drawCalibrationDrone(sx, o.y);
     }
 }
 
-function drawSpriteWheel(x, y, dia, rot){
-    const spr = SPRITES.wheel;
-    if (!spr) return;
+function drawCalibrationDrone(x, y){
     ctx.save();
     ctx.translate(x, y);
-    ctx.rotate(rot);
-    ctx.drawImage(spr, -dia/2, -dia/2, dia, dia);
-    ctx.restore();
-}
-
-function drawEnemyCartSprite(x, y){
-    ctx.save();
-    ctx.translate(x, y);
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 28 * SPRITE_SCALE, 4, 0, 0, Math.PI*2);
-    ctx.fill();
-    const spr = SPRITES.enemy;
+    ctx.fillStyle = 'rgba(0,0,0,0.42)';
+    ctx.beginPath(); ctx.ellipse(0, 0, 34 * SPRITE_SCALE, 4, 0, 0, Math.PI*2); ctx.fill();
+    const spr = SPRITES.calibrationDrone;
     if (spr){
-        // Enemy sprite is taller (includes reptile on top). Bump h so the
-        // CART portion visually matches the player's cart size.
-        const h = 90 * SPRITE_SCALE;
-        const w = h * spr.width / spr.height;
-        const wob = Math.sin(frame * 0.4) * 0.5;
-        const top = -h + 6 + wob;
-        ctx.drawImage(spr, -w/2, top, w, h);
-        if (SPRITES.wheel){
-            const wDia = w * 0.34;
-            const wYOff = top + h * 0.801;
-            const wXOff = w * 0.286;
-            const wRot = -worldX / (wDia * 0.5) * 1.3;
-            drawSpriteWheel(-wXOff, wYOff, wDia, wRot);
-            drawSpriteWheel( wXOff, wYOff, wDia, wRot);
-        }
+        const w = 86 * SPRITE_SCALE;
+        const h = w * spr.height / spr.width;
+        const wob = Math.sin(frame * 0.35) * 1.2;
+        ctx.scale(-1, 1);
+        ctx.drawImage(spr, -w/2, -h + 5 + wob, w, h);
     } else {
-        drawEnemyCart(0, 0, false, frame);
+        ctx.fillStyle = '#24272e'; ctx.fillRect(-32, -34, 64, 30);
+        ctx.fillStyle = '#00d4ff'; ctx.fillRect(-28, -28, 8, 8);
     }
     ctx.restore();
 }
 
-function drawBarrel(x, y){
+function drawImpactBlock(x, y){
     ctx.save();
     ctx.translate(x, y);
-    // Shadow under
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 18 * SPRITE_SCALE, 4, 0, 0, Math.PI*2);
-    ctx.fill();
-    const spr = SPRITES.barrel;
+    ctx.fillStyle = 'rgba(0,0,0,0.42)';
+    ctx.beginPath(); ctx.ellipse(0, 0, 20 * SPRITE_SCALE, 4, 0, 0, Math.PI*2); ctx.fill();
+    const spr = SPRITES.impactBlock;
     if (spr){
-        const h = 44 * SPRITE_SCALE;
-        const w = h * spr.width / spr.height;
+        const h = 50 * SPRITE_SCALE, w = h * spr.width / spr.height;
         ctx.drawImage(spr, -w/2, -h, w, h);
     } else {
-        // Fallback primitive
-        ctx.fillStyle = '#a04020';
-        ctx.fillRect(-15, -36, 30, 36);
-        ctx.fillStyle = '#2a2a2a';
-        ctx.fillRect(-15, -28, 30, 3);
-        ctx.fillRect(-15, -10, 30, 3);
+        ctx.fillStyle = '#171717'; ctx.fillRect(-15, -42, 30, 42);
+        ctx.fillStyle = '#d94819'; ctx.fillRect(-12, -36, 24, 8);
     }
     ctx.restore();
 }
 
-function drawEnemyCart(x, y, facingRight, fr){
-    ctx.save();
-    ctx.translate(x, y);
-    const dir = facingRight ? 1 : -1;
-    ctx.scale(dir, 1);
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 28, 4, 0, 0, Math.PI*2);
-    ctx.fill();
-    // Body
-    ctx.fillStyle = '#3a1c08';
-    ctx.beginPath();
-    ctx.moveTo(-26, -28);
-    ctx.lineTo(26, -28);
-    ctx.lineTo(22, -2);
-    ctx.lineTo(-22, -2);
-    ctx.closePath();
-    ctx.fill();
-    // Plank highlights
-    ctx.strokeStyle = '#5a2c10';
-    ctx.lineWidth = 1;
-    for (let i = -22; i <= 22; i += 6){
-        ctx.beginPath();
-        ctx.moveTo(i, -27);
-        ctx.lineTo(i - 1, -3);
-        ctx.stroke();
-    }
-    // Iron rim
-    ctx.strokeStyle = '#0a0a0a';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(-26, -28);
-    ctx.lineTo(26, -28);
-    ctx.stroke();
-    // Kremling-ish enemy peeking out
-    ctx.fillStyle = '#3a6010';
-    ctx.beginPath();
-    ctx.ellipse(0, -34, 10, 7, 0, 0, Math.PI*2);
-    ctx.fill();
-    ctx.fillStyle = '#5a8020';
-    ctx.beginPath();
-    ctx.ellipse(0, -36, 8, 5, 0, 0, Math.PI*2);
-    ctx.fill();
-    // Eyes
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(2, -38, 3, 3);
-    ctx.fillStyle = '#000';
-    ctx.fillRect(3, -37, 1.5, 1.5);
-    // Wheels
-    const wr = (fr * 0.4) * dir;
-    drawWheel(-15, -8, 8, wr);
-    drawWheel(15, -8, 8, wr);
-    ctx.restore();
-}
-
-// --- PLAYER ---
+// --- SELECTED TUKU BALL ---
 function drawPlayer(){
-    const x = PLAYER_X;
-    const y = player.y;
-    const inAir = !player.onGround;
-
-    // === DEAD: launch the ape into the air, spinning, with shocked pose ===
-    if (state === STATE.DEAD && SPRITES.apeLose){
-        const t = player.deadFrame;
-        const spr = SPRITES.apeLose;
-        // Pop up, spin, then ride the falling player physics already in update()
-        const liftY = (t < 0.5) ? -t * 360 : -180 + (t - 0.5) * 200;
-        const spin = t * 6;
-        const sc = 1.2;
-        const aH = 70 * sc;
-        const aW = aH * spr.width / spr.height;
-        ctx.save();
-        ctx.translate(x + 32, y + 25 + liftY);
-        ctx.rotate(spin);
-        ctx.drawImage(spr, -aW/2, -aH/2, aW, aH);
-        ctx.restore();
-        return;
-    }
-    const bob = inAir ? 0 : Math.sin(frame * 0.4) * 0.7;
-
-    // Tilt: in-air = lean from vy; grounded on slope = match slope angle
-    let tilt;
-    if (inAir){
-        tilt = Math.max(-0.25, Math.min(0.25, player.vy / 1500));
-    } else {
-        // Sample ground ahead/behind, preferring the rail we're currently on
-        const cx = worldX + PLAYER_X + player.w * 0.5;
-        const ya = groundAt(cx + 18, player.groundY);
-        const yb = groundAt(cx - 18, player.groundY);
-        if (ya !== null && yb !== null){
-            tilt = Math.atan2(ya - yb, 36) * 0.85;
-        } else {
-            tilt = 0;
-        }
-    }
+    const edition = selectedEdition();
+    const spr = SPRITES[edition.sprite];
+    const x = PLAYER_X + player.w * 0.5;
+    const y = player.y + player.h * 0.5;
+    const bob = player.onGround ? Math.sin(frame * 0.4) * 0.7 : 0;
+    const deadSpin = state === STATE.DEAD ? player.deadFrame * 8 : 0;
+    const roll = worldX / 22 + deadSpin;
+    const visualSize = player.w * (1 + (SPRITE_SCALE - 1) * 0.75);
 
     ctx.save();
-    ctx.translate(x + 32, y + 25 + bob);
-    ctx.rotate(tilt);
-
-    // Cart shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillStyle = 'rgba(0,0,0,0.38)';
     ctx.beginPath();
-    ctx.ellipse(0, 30, 32, 5, 0, 0, Math.PI*2);
+    ctx.ellipse(x, player.y + player.h + 4, visualSize * 0.43, 5 * SPRITE_SCALE, 0, 0, Math.PI*2);
     ctx.fill();
 
-    if (SPRITES.ape && SPRITES.cart){
-        const cartH = 50 * SPRITE_SCALE;
-        const cartW = cartH * SPRITES.cart.width / SPRITES.cart.height;
-        const apeH = 48 * SPRITE_SCALE;
-        const apeW = apeH * SPRITES.ape.width / SPRITES.ape.height;
+    ctx.translate(x, y + bob);
+    const glow = ctx.createRadialGradient(0, 0, visualSize * 0.1, 0, 0, visualSize * 0.72);
+    glow.addColorStop(0, `${edition.color}44`);
+    glow.addColorStop(1, `${edition.color}00`);
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(0, 0, visualSize * 0.72, 0, Math.PI * 2); ctx.fill();
 
-        // === Ape animation ===
-        // Independent bob (faster than cart bob) to look like he's bouncing IN the cart
-        const apeBob = Math.sin(frame * 0.55) * 1.3;
-        // Speed-driven rattle when grounded — subtle, only kicks in at higher speeds
-        const speedNorm = Math.min(1, (speed - INIT_SPEED) / (MAX_SPEED - INIT_SPEED));
-        const rattle = (player.onGround ? Math.max(0, speedNorm - 0.3) : 0) * 0.4;
-        const rx = (Math.random() - 0.5) * rattle;
-        const ry = (Math.random() - 0.5) * rattle;
-        // Squash/stretch: squashed on landing, stretched on takeoff (negative vy)
-        let sqX = 1, sqY = 1;
-        if (player.squash > 0){
-            sqY = 1 - player.squash * 0.18;
-            sqX = 1 + player.squash * 0.10;
-        } else if (!player.onGround && player.vy < -200){
-            // Stretch upward during ascent
-            const s = Math.min(1, -player.vy / 800);
-            sqY = 1 + s * 0.10;
-            sqX = 1 - s * 0.05;
-        }
-        // Excited lean when in air (after a brief moment)
-        const airLean = !player.onGround && player.airTime > 0.05
-            ? Math.max(-0.18, Math.min(0.10, -player.vy / 5000))
-            : 0;
-
-        // Cart wheel center fixed at y=+19 from player center (slightly below rail).
-        // Cart top = wheelY - cartH * 0.727 (sprite has wheels at 72.7% from top).
-        const wheelY = 19;
-        const cartTop = wheelY - cartH * 0.727;
-        // Ape sits IN the cart — ratio kept from original layout.
-        const apeBottom = cartTop + cartH * 0.46;
-        const apeTop = apeBottom - apeH;
-
-        ctx.save();
-        ctx.translate(rx, apeBob + ry);
-        ctx.rotate(airLean);
-        ctx.scale(sqX, sqY);
-        ctx.drawImage(SPRITES.ape, -apeW/2, apeTop, apeW, apeH);
-        ctx.restore();
-
-        // Cart on top (no rattle, no squash — it's the heavier object)
-        const cartBobExtra = Math.sin(frame * 0.4) * 0.4;
-        ctx.drawImage(SPRITES.cart, -cartW/2, cartTop + cartBobExtra, cartW, cartH);
-
-        // Rotating wheels in the empty wheel wells
-        if (SPRITES.wheel){
-            const wDia = cartW * 0.27;
-            const wYOff = wheelY + cartBobExtra;
-            const wXOff = cartW * 0.221;
-            const wRot = worldX / (wDia * 0.5);
-            drawSpriteWheel(-wXOff, wYOff, wDia, wRot);
-            drawSpriteWheel( wXOff, wYOff, wDia, wRot);
-        }
+    let sqX = 1, sqY = 1;
+    if (player.squash > 0){
+        sqX = 1 + player.squash * 0.12;
+        sqY = 1 - player.squash * 0.16;
+    } else if (!player.onGround && player.vy < -200){
+        const stretch = Math.min(1, -player.vy / 800);
+        sqX = 1 - stretch * 0.05;
+        sqY = 1 + stretch * 0.08;
+    }
+    ctx.rotate(roll);
+    ctx.scale(sqX, sqY);
+    if (spr){
+        ctx.drawImage(spr, -visualSize/2, -visualSize/2, visualSize, visualSize);
     } else {
-        // Fallback primitives
-        drawApe(0, -8, frame, inAir);
-        drawCart(0, 5, frame);
-    }
-
-    ctx.restore();
-}
-
-function drawApe(cx, cy, fr, inAir){
-    const wave = Math.sin(fr * 0.4) * 1.2;
-    // Body
-    ctx.fillStyle = C.apeFur;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy + 6, 18, 14, 0, 0, Math.PI*2);
-    ctx.fill();
-    // Belly fur lighter
-    ctx.fillStyle = C.apeFace;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy + 9, 10, 7, 0, 0, Math.PI*2);
-    ctx.fill();
-    // Tie
-    ctx.fillStyle = C.tieRed;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy + 5);
-    ctx.lineTo(cx - 5, cy + 16);
-    ctx.lineTo(cx, cy + 19);
-    ctx.lineTo(cx + 5, cy + 16);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = C.tieRedDk;
-    ctx.fillRect(cx - 4, cy + 4, 8, 3);
-    // Arms holding cart
-    ctx.fillStyle = C.apeFur;
-    ctx.beginPath();
-    ctx.ellipse(cx - 16, cy + 8 + wave*0.5, 6, 5, 0.3, 0, Math.PI*2);
-    ctx.ellipse(cx + 16, cy + 8 - wave*0.5, 6, 5, -0.3, 0, Math.PI*2);
-    ctx.fill();
-
-    // Head
-    ctx.fillStyle = C.apeFur;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy - 8, 14, 13, 0, 0, Math.PI*2);
-    ctx.fill();
-    // Hair top
-    ctx.fillStyle = '#2a1408';
-    ctx.beginPath();
-    ctx.ellipse(cx, cy - 16, 11, 4, 0, 0, Math.PI*2);
-    ctx.fill();
-    // Face
-    ctx.fillStyle = C.apeFace;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy - 5, 9, 8, 0, 0, Math.PI*2);
-    ctx.fill();
-    // Brow
-    ctx.fillStyle = '#3a1808';
-    ctx.beginPath();
-    ctx.ellipse(cx - 4, cy - 10, 4, 2, -0.2, 0, Math.PI*2);
-    ctx.ellipse(cx + 4, cy - 10, 4, 2, 0.2, 0, Math.PI*2);
-    ctx.fill();
-    // Eyes
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(cx - 4, cy - 7, 2.4, 0, Math.PI*2);
-    ctx.arc(cx + 4, cy - 7, 2.4, 0, Math.PI*2);
-    ctx.fill();
-    ctx.fillStyle = '#000';
-    const eyeShift = inAir ? 0.6 : 0;
-    ctx.beginPath();
-    ctx.arc(cx - 3.5 + eyeShift, cy - 7, 1.4, 0, Math.PI*2);
-    ctx.arc(cx + 4.5 + eyeShift, cy - 7, 1.4, 0, Math.PI*2);
-    ctx.fill();
-    // Nostrils
-    ctx.fillStyle = '#3a1808';
-    ctx.fillRect(cx - 2, cy - 3, 1.5, 2);
-    ctx.fillRect(cx + 0.5, cy - 3, 1.5, 2);
-    // Mouth (smile when grounded, "o" when in air)
-    ctx.strokeStyle = '#3a1808';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    if (inAir){
-        ctx.arc(cx, cy + 1, 1.8, 0, Math.PI*2);
-    } else {
-        ctx.arc(cx, cy + 1, 3, 0.1 * Math.PI, 0.9 * Math.PI);
-    }
-    ctx.stroke();
-}
-
-function drawCart(cx, cy, fr){
-    // Body bucket-shape
-    // Bottom dark
-    ctx.fillStyle = C.cartDark;
-    ctx.beginPath();
-    ctx.moveTo(cx - 30, cy + 6);
-    ctx.lineTo(cx + 30, cy + 6);
-    ctx.lineTo(cx + 26, cy + 18);
-    ctx.lineTo(cx - 26, cy + 18);
-    ctx.closePath();
-    ctx.fill();
-    // Main wood
-    ctx.fillStyle = C.cartWood;
-    ctx.beginPath();
-    ctx.moveTo(cx - 32, cy - 10);
-    ctx.lineTo(cx + 32, cy - 10);
-    ctx.lineTo(cx + 30, cy + 6);
-    ctx.lineTo(cx - 30, cy + 6);
-    ctx.closePath();
-    ctx.fill();
-    // Plank lines
-    ctx.strokeStyle = C.cartDark;
-    ctx.lineWidth = 1;
-    for (let i = -3; i <= 3; i++){
-        const px = cx + i * 9;
-        ctx.beginPath();
-        ctx.moveTo(px, cy - 10);
-        ctx.lineTo(px - 0.4, cy + 6);
-        ctx.stroke();
-    }
-    // Iron bands
-    ctx.fillStyle = C.cartIron;
-    ctx.fillRect(cx - 32, cy - 10, 64, 3);
-    ctx.fillRect(cx - 30, cy + 5, 60, 3);
-    // Rivets
-    for (let i = -2; i <= 2; i++){
-        ctx.fillStyle = '#0a0a0a';
-        ctx.beginPath();
-        ctx.arc(cx + i * 12, cy - 8.5, 1.5, 0, Math.PI*2);
-        ctx.arc(cx + i * 12, cy + 6.5, 1.4, 0, Math.PI*2);
-        ctx.fill();
-    }
-    // Front lip highlight
-    ctx.fillStyle = '#8a4a20';
-    ctx.fillRect(cx - 32, cy - 10, 64, 1);
-    // Wheels (slightly tucked, sit on the rails)
-    const wr = (fr * 0.5);
-    drawWheel(cx - 18, cy + 10, 9, wr);
-    drawWheel(cx + 18, cy + 10, 9, wr);
-}
-
-function drawWheel(cx, cy, r, rot){
-    // Outer black
-    ctx.fillStyle = C.cartIron;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI*2);
-    ctx.fill();
-    // Inner ring
-    ctx.fillStyle = '#3a3a3a';
-    ctx.beginPath();
-    ctx.arc(cx, cy, r - 2.5, 0, Math.PI*2);
-    ctx.fill();
-    // Spokes
-    ctx.strokeStyle = C.cartIron;
-    ctx.lineWidth = 2.4;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(rot);
-    for (let i = 0; i < 4; i++){
-        ctx.rotate(Math.PI / 2);
-        ctx.beginPath();
-        ctx.moveTo(-r + 2, 0);
-        ctx.lineTo(r - 2, 0);
-        ctx.stroke();
+        ctx.fillStyle = edition.color;
+        ctx.beginPath(); ctx.arc(0, 0, visualSize/2, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#07131d'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(0, 0, visualSize/2 - 3, 0, Math.PI*2); ctx.stroke();
     }
     ctx.restore();
-    // Hub
-    ctx.fillStyle = C.cartIron;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 3, 0, Math.PI*2);
-    ctx.fill();
-    // Highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.beginPath();
-    ctx.arc(cx - r*0.4, cy - r*0.4, 1.5, 0, Math.PI*2);
-    ctx.fill();
 }
 
 // --- PARTICLES ---
@@ -2627,6 +2326,7 @@ function drawParticles(){
 // --- HUD ---
 function drawHUD(){
     const k = HUD_SCALE;
+    const edition = selectedEdition();
     const padX = 16 * k;
     const padY = 18 * k;
     const rowH = 30 * k;
@@ -2645,7 +2345,7 @@ function drawHUD(){
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
 
-    // ROW 1 — Bananas (icon + count, brightest, with pulse on grab)
+    // ROW 1 — Performance tokens (icon + count, brightest, with pulse on grab)
     const iconScale = (1 + hudPulse * 0.45) * k;
     ctx.save();
     ctx.translate(padX + 8 * k, padY + 12 * k);
@@ -2658,22 +2358,25 @@ function drawHUD(){
     ctx.translate(padX + 32 * k, padY);
     ctx.scale(txtScale, txtScale);
     ctx.font = `bold ${Math.round(24 * k)}px "Courier New", monospace`;
-    drawText(`x ${bananaCount}`, 0, 0, '#ffe070', '#3a2008');
+    drawText(`x ${bananaCount}`, 0, 0, edition.color, '#06101a');
     ctx.restore();
 
     // ROW 2 — SCORE (label + big value, primary)
     const row2Y = padY + rowH;
     ctx.font = `bold ${Math.round(11 * k)}px "Courier New", monospace`;
-    drawText('PUNTOS', padX, row2Y + 7 * k, '#a07050', '#000');
+    drawText('REND.', padX, row2Y + 7 * k, '#7890a3', '#000');
     ctx.font = `bold ${Math.round(22 * k)}px "Courier New", monospace`;
-    drawText(`${score} / ${TARGET_SCORE}`, padX + labelCol, row2Y, C.text, C.textShad);
+    drawText(`${score} / ${TARGET_SCORE}`, padX + labelCol, row2Y, '#f5f5f4', '#06101a');
 
     // ROW 3 — Distance (label + medium value)
     const row3Y = padY + rowH * 2;
     ctx.font = `bold ${Math.round(11 * k)}px "Courier New", monospace`;
-    drawText('DIST.', padX, row3Y + 5 * k, '#a07050', '#000');
+    drawText('DIST.', padX, row3Y + 5 * k, '#7890a3', '#000');
     ctx.font = `bold ${Math.round(18 * k)}px "Courier New", monospace`;
-    drawText(`${distance}m`, padX + labelCol, row3Y, '#d4a070', '#2a1408');
+    drawText(`${distance}m`, padX + labelCol, row3Y, '#cbd5e1', '#06101a');
+
+    ctx.font = `bold ${Math.round(10 * k)}px "Courier New", monospace`;
+    drawText(edition.name, padX, row3Y + 25 * k, edition.color, '#06101a');
 
     ctx.textAlign = 'left';
 }
@@ -2840,22 +2543,23 @@ function drawButton(opts){
     const lift = pulse ? Math.sin(frame * 0.06) * 1.5 : 0;
     const yy = y + lift;
 
+    const edition = selectedEdition();
     // Color bands — chunky pixel art, no smooth gradients
     let lightCol, midCol, darkCol, edgeCol, textCol, shadowCol;
     if (primary){
-        lightCol = '#ffd870';
-        midCol   = '#e08820';
-        darkCol  = '#a04810';
-        edgeCol  = '#3a1408';
-        textCol  = '#ffffff';
-        shadowCol = '#5a1808';
+        lightCol = '#f5f5f4';
+        midCol   = edition.color;
+        darkCol  = edition.dark;
+        edgeCol  = '#02070b';
+        textCol  = edition.id === 'fuego' ? '#ffffff' : '#06101a';
+        shadowCol = edition.id === 'fuego' ? '#5e1607' : '#ffffff66';
     } else {
-        lightCol = '#6a4220';
-        midCol   = '#3a2010';
-        darkCol  = '#1a0c04';
+        lightCol = '#496175';
+        midCol   = '#263746';
+        darkCol  = '#0b1118';
         edgeCol  = '#000000';
-        textCol  = '#f0c878';
-        shadowCol = '#1a0c04';
+        textCol  = '#cbd5e1';
+        shadowCol = '#06101a';
     }
 
     // Hard rectangular drop shadow (offset 4px, no blur)
@@ -2890,7 +2594,7 @@ function drawButton(opts){
     // Pulsing pixel "corner brackets" instead of smooth glow
     if (pulse){
         const a = 0.35 + 0.45 * t;
-        ctx.fillStyle = `rgba(255, 220, 80, ${a})`;
+        ctx.fillStyle = edition.color;
         const bs = 6, bw = 16;  // bracket size
         // Top-left
         ctx.fillRect(x - bs, yy - bs, bw, 2);
@@ -2928,7 +2632,7 @@ function drawPixelPanel(x, y, w, h){
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(x + 4, y + 5, w, h);
     // Body
-    ctx.fillStyle = '#2a1408';
+    ctx.fillStyle = '#08111a';
     ctx.fillRect(x, y, w, h);
     // Outer border
     ctx.fillStyle = '#000';
@@ -2937,7 +2641,7 @@ function drawPixelPanel(x, y, w, h){
     ctx.fillRect(x, y, 2, h);
     ctx.fillRect(x + w - 2, y, 2, h);
     // Inner border (1px gold inset)
-    ctx.fillStyle = '#5a3818';
+    ctx.fillStyle = '#475569';
     ctx.fillRect(x + 4, y + 4, w - 8, 1);
     ctx.fillRect(x + 4, y + h - 5, w - 8, 1);
     ctx.fillRect(x + 4, y + 4, 1, h - 8);
@@ -2976,88 +2680,95 @@ function drawVignette(){
 
 // --- MENU ---
 function drawMenu(){
-    // Dim BG more aggressively so the gameplay world doesn't fight the UI
-    ctx.fillStyle = 'rgba(8,4,20,0.78)';
+    ctx.fillStyle = 'rgba(3,8,13,0.82)';
     ctx.fillRect(0, 0, W, H);
-
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-
     const isLandscape = W > H;
+    const edition = selectedEdition();
+    const titleY = H * (isLandscape ? 0.035 : 0.045);
+    const tukuSize = isLandscape ? 30 : 44;
+    const titleSize = fitTextSize('NO TE CAIGAS', W - 30, isLandscape ? 54 : 64);
+    ctx.font = `900 ${tukuSize}px "Courier New", monospace`;
+    drawText('TUKU:', W/2, titleY, edition.color, '#02070b');
+    ctx.font = `900 ${titleSize}px "Courier New", monospace`;
+    ctx.lineWidth = Math.max(4, titleSize * 0.09);
+    ctx.strokeStyle = '#02070b';
+    ctx.strokeText('NO TE CAIGAS', W/2, titleY + tukuSize * 0.9);
+    drawText('NO TE CAIGAS', W/2, titleY + tukuSize * 0.9, '#f5f5f4', '#02070b');
 
-    // === TITLE: use the pre-rendered logo sprite if loaded ===
-    const titleSpr = SPRITES.title;
-    const titleY = H * (isLandscape ? 0.08 : 0.07);
-    let titleH;
-    if (titleSpr){
-        const maxW = W * 0.85;
-        const maxH = H * (isLandscape ? 0.40 : 0.30);
-        let drawW = maxW;
-        let drawH = drawW * titleSpr.height / titleSpr.width;
-        if (drawH > maxH){
-            drawH = maxH;
-            drawW = drawH * titleSpr.width / titleSpr.height;
+    const storyY = titleY + tukuSize + titleSize + (isLandscape ? 2 : 12);
+    ctx.font = `bold ${isLandscape ? 11 : 17}px "Courier New", monospace`;
+    drawText('ELIGE TU EDICIÓN Y SUPERA LAS PRUEBAS', W/2, storyY, '#cbd5e1', '#000');
+    ctx.font = `bold ${isLandscape ? 10 : 15}px "Courier New", monospace`;
+    drawText('AGARRE · REBOTE · RESISTENCIA', W/2, storyY + (isLandscape ? 16 : 26), '#7890a3', '#000');
+
+    const gridCols = isLandscape ? 4 : 2;
+    const gap = isLandscape ? 10 : 12;
+    const cardW = isLandscape ? Math.min(134, (W - 70 - gap * 3) / 4) : (W - 58 - gap) / 2;
+    const cardH = isLandscape ? 48 : 72;
+    const gridW = gridCols * cardW + (gridCols - 1) * gap;
+    const gridX = (W - gridW) / 2;
+    const gridY = isLandscape ? storyY + 38 : storyY + 58;
+    TUKU_EDITIONS.forEach((item, index) => {
+        const col = index % gridCols;
+        const row = Math.floor(index / gridCols);
+        const x = gridX + col * (cardW + gap);
+        const y = gridY + row * (cardH + gap);
+        const active = item.id === selectedEditionId;
+        ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(x + 3, y + 4, cardW, cardH);
+        ctx.fillStyle = active ? item.dark : '#101820'; ctx.fillRect(x, y, cardW, cardH);
+        ctx.fillStyle = active ? item.color : '#425261';
+        ctx.fillRect(x, y, cardW, active ? 4 : 2);
+        ctx.strokeStyle = active ? item.color : '#263746';
+        ctx.lineWidth = active ? 3 : 2;
+        ctx.strokeRect(x + 1, y + 1, cardW - 2, cardH - 2);
+        const preview = SPRITES[item.sprite];
+        const previewSize = isLandscape ? 28 : 38;
+        if (preview) ctx.drawImage(preview, x + 6, y + (cardH - previewSize) / 2, previewSize, previewSize);
+        else {
+            ctx.fillStyle = item.color;
+            ctx.fillRect(x + 10, y + (isLandscape ? 15 : 20), isLandscape ? 12 : 16, isLandscape ? 12 : 16);
         }
-        ctx.drawImage(titleSpr, W/2 - drawW/2, titleY, drawW, drawH);
-        titleH = drawH;
-    } else {
-        // Fallback: pixel-text title
-        const lines = ['NO TE', 'CAIGAS'];
-        const longest = lines.reduce((a, b) => a.length > b.length ? a : b);
-        const cap = isLandscape ? Math.min(W * 0.07, H * 0.18, 72)
-                                : Math.min(W * 0.15, H * 0.10, 84);
-        const titleSize = fitTextSize(longest, W - 40, cap);
-        ctx.font = `bold ${titleSize}px "Courier New", monospace`;
-        const lineGap = titleSize * 1.05;
-        ctx.lineWidth = Math.max(4, titleSize * 0.10);
-        ctx.strokeStyle = '#1a0418';
-        lines.forEach((l, i) => ctx.strokeText(l, W/2, titleY + i * lineGap));
-        const tg = ctx.createLinearGradient(0, titleY, 0, titleY + lineGap * lines.length);
-        tg.addColorStop(0, '#ffe080'); tg.addColorStop(0.55, '#d07820'); tg.addColorStop(1, '#7a3010');
-        ctx.fillStyle = tg;
-        lines.forEach((l, i) => ctx.fillText(l, W/2, titleY + i * lineGap));
-        titleH = lineGap * lines.length;
-    }
+        ctx.font = `bold ${isLandscape ? 13 : 19}px "Courier New", monospace`;
+        ctx.textAlign = 'left';
+        drawText(item.name, x + (isLandscape ? 38 : 50), y + (isLandscape ? 12 : 16), active ? '#fff' : '#a8b7c5', '#000');
+        if (!isLandscape){
+            ctx.font = `bold 9px "Courier New", monospace`;
+            drawText(item.subtitle, x + 10, y + 46, active ? item.color : '#667989', '#000');
+        }
+        activeButtons.push({ x, y, w:cardW, h:cardH, onTap:() => selectEdition(item.id) });
+    });
 
-    // (subtitle removed — title speaks for itself)
+    const rows = Math.ceil(TUKU_EDITIONS.length / gridCols);
+    const detailsY = gridY + rows * cardH + (rows - 1) * gap + (isLandscape ? 7 : 15);
+    ctx.textAlign = 'center';
+    ctx.font = `bold ${isLandscape ? 11 : 16}px "Courier New", monospace`;
+    drawText(`${edition.name} · ${edition.description}`, W/2, detailsY, edition.color, '#000');
 
-    // === PLAY BUTTON ===
     const btnW = Math.min(W * (isLandscape ? 0.40 : 0.75), 360);
     const btnH = Math.min(H * (isLandscape ? 0.13 : 0.09), 78);
-    const btnY = isLandscape ? H * 0.66 : H * 0.62;
+    const btnY = isLandscape ? H * 0.69 : H * 0.67;
     drawButton({
         x: W/2 - btnW/2, y: btnY, w: btnW, h: btnH,
-        label: '▶  JUGAR',
+        label: '▶  INICIAR PRUEBA',
         primary: true, pulse: true,
         onTap: requestStartGame,
     });
-
-    // drawButton restores left alignment, so explicitly re-center the hint.
     const hintSize = Math.max(11, Math.round(btnH * 0.22));
     ctx.font = `${hintSize}px "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    drawText('Toca la pantalla para saltar', W/2, btnY + btnH + 12, '#a07050', '#000');
+    drawText('Mantén pulsado para saltar más alto', W/2, btnY + btnH + 10, '#7890a3', '#000');
 
-    // === BEST SCORE PANEL (16-bit framed) ===
     if (bestScore > 0 || bestDist > 0){
-        const recSize = Math.max(14, Math.round(btnH * 0.28));
-        const lineH = recSize * 1.15;
-        const padY = recSize * 0.55;
-        const badgeH = padY * 2 + lineH * 2;
-        const badgeW = Math.min(W * 0.85, 380);
-        const badgeY = H - badgeH - H * 0.06;
-        const badgeX = W/2 - badgeW/2;
-        drawPixelPanel(badgeX, badgeY, badgeW, badgeH);
+        const recSize = isLandscape ? 11 : 15;
+        const badgeY = H - (isLandscape ? 20 : 42);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.font = `bold ${recSize}px "Courier New", monospace`;
-        drawText('★ RÉCORD ★', W/2, badgeY + padY, '#ffd070', '#3a1808');
-        ctx.font = `${Math.round(recSize * 0.88)}px "Courier New", monospace`;
-        drawText(`${bestScore} puntos  ·  ${bestDist}m`,
-                 W/2, badgeY + padY + lineH, '#f0c878', '#3a1808');
+        drawText(`★ RÉCORD ${bestScore} PTS · ${bestDist}m ★`, W/2, badgeY, '#f59e0b', '#000');
     }
-
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 }
@@ -3072,10 +2783,11 @@ function drawLevelComplete(){
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     const isPortrait = H > W;
-    const titleSize = fitTextSize('¡NIVEL SUPERADO!', W - 40, Math.min(W * 0.13, 72));
+    const edition = selectedEdition();
+    const titleSize = fitTextSize('¡CERTIFICACIÓN COMPLETADA!', W - 40, Math.min(W * 0.105, 58));
     const titleY = H * (isPortrait ? 0.14 : 0.10);
     ctx.font = `bold ${titleSize}px "Courier New", monospace`;
-    drawText('¡NIVEL SUPERADO!', W/2, titleY, '#ffe070', '#7a3010');
+    drawText('¡CERTIFICACIÓN COMPLETADA!', W/2, titleY, edition.color, '#06101a');
 
     const panelW = Math.min(W * 0.85, 400);
     const panelH = Math.min(H * (isPortrait ? 0.20 : 0.30), 160);
@@ -3083,19 +2795,19 @@ function drawLevelComplete(){
     const panelY = titleY + titleSize * 1.45;
     drawPixelPanel(panelX, panelY, panelW, panelH);
     ctx.font = `${Math.max(13, Math.round(panelH * 0.13))}px "Courier New", monospace`;
-    drawText(`OBJETIVO: ${TARGET_SCORE} PUNTOS`, W/2, panelY + panelH * 0.12, '#a07050', '#000');
+    drawText(`${edition.name} · LISTO PARA LA CANCHA`, W/2, panelY + panelH * 0.12, '#94a3b8', '#000');
     ctx.font = `bold ${Math.max(30, Math.round(panelH * 0.36))}px "Courier New", monospace`;
-    drawText(`${score}`, W/2, panelY + panelH * 0.30, '#ffe070', '#3a2008');
+    drawText(`${score}`, W/2, panelY + panelH * 0.30, edition.color, '#06101a');
     ctx.font = `${Math.max(14, Math.round(panelH * 0.14))}px "Courier New", monospace`;
-    drawText(`${distance}m  ·  ${bananaCount} plátanos`, W/2, panelY + panelH * 0.75, C.text, C.textShad);
+    drawText(`${distance}m  ·  ${bananaCount} fichas`, W/2, panelY + panelH * 0.75, '#cbd5e1', '#06101a');
 
     if (levelCompleteFrame > 0.5){
         const btnW = Math.min(W * 0.78, 360);
         const btnH = Math.min(H * (isPortrait ? 0.08 : 0.13), 72);
-        const btnY = H - btnH - H * 0.09;
+        const btnY = H - btnH - (isPortrait ? 150 : 102);
         drawButton({
             x: W/2 - btnW/2, y: btnY, w: btnW, h: btnH,
-            label: '▶  JUGAR DE NUEVO',
+            label: '↻  REPETIR PRUEBA',
             primary: true, pulse: true,
             onTap: startGame,
         });
@@ -3106,7 +2818,7 @@ function drawLevelComplete(){
 
 // --- GAME OVER ---
 function drawGameOver(){
-    ctx.fillStyle = `rgba(10,4,24,${Math.min(0.78, player.deadFrame * 0.95)})`;
+    ctx.fillStyle = `rgba(3,8,13,${Math.min(0.80, player.deadFrame * 0.95)})`;
     ctx.fillRect(0, 0, W, H);
 
     if (player.deadFrame < 0.3) return;
@@ -3117,17 +2829,18 @@ function drawGameOver(){
     const isPortrait = H > W;
 
     // === Título de fin de partida ===
-    const crashSize = fitTextSize('¡TE ESTRELLASTE!', W - 60, Math.min(W * 0.18, 90));
+    const edition = selectedEdition();
+    const crashSize = fitTextSize('¡PRUEBA INTERRUMPIDA!', W - 50, Math.min(W * 0.13, 68));
     ctx.font = `bold ${crashSize}px "Courier New", monospace`;
     ctx.lineWidth = Math.max(4, crashSize * 0.10);
     ctx.strokeStyle = '#1a0204';
     const crashY = H * (isPortrait ? 0.07 : 0.14);
-    ctx.strokeText('¡TE ESTRELLASTE!', W/2, crashY);
+    ctx.strokeText('¡PRUEBA INTERRUMPIDA!', W/2, crashY);
     const tg = ctx.createLinearGradient(0, crashY, 0, crashY + crashSize);
-    tg.addColorStop(0, '#ff9050');
-    tg.addColorStop(1, '#9a1010');
+    tg.addColorStop(0, edition.color);
+    tg.addColorStop(1, edition.dark);
     ctx.fillStyle = tg;
-    ctx.fillText('¡TE ESTRELLASTE!', W/2, crashY);
+    ctx.fillText('¡PRUEBA INTERRUMPIDA!', W/2, crashY);
 
     // === SCORE PANEL — leave enough height for both rows of secondary stats ===
     const panelW = Math.min(W * 0.85, 380);
@@ -3145,15 +2858,15 @@ function drawGameOver(){
     const leftStatX = panelX + panelW * 0.25;
     const rightStatX = panelX + panelW * 0.75;
     ctx.font = `${labelSize}px "Courier New", monospace`;
-    drawText('PUNTOS', W/2, panelY + panelH * 0.09, '#a07050', '#000');
+    drawText('RENDIMIENTO', W/2, panelY + panelH * 0.09, '#7890a3', '#000');
     ctx.font = `bold ${bigSize}px "Courier New", monospace`;
-    drawText(`${score}`, W/2, panelY + panelH * 0.25, '#ffe070', '#3a2008');
+    drawText(`${score}`, W/2, panelY + panelH * 0.25, edition.color, '#06101a');
     ctx.font = `${Math.round(labelSize * 0.85)}px "Courier New", monospace`;
-    drawText('DISTANCIA', leftStatX, panelY + panelH * 0.67, '#a07050', '#000');
-    drawText('PLÁTANOS', rightStatX, panelY + panelH * 0.67, '#a07050', '#000');
+    drawText('DISTANCIA', leftStatX, panelY + panelH * 0.67, '#7890a3', '#000');
+    drawText('FICHAS', rightStatX, panelY + panelH * 0.67, '#7890a3', '#000');
     ctx.font = `bold ${sideSize}px "Courier New", monospace`;
-    drawText(`${distance}m`, leftStatX, panelY + panelH * 0.81, C.text, C.textShad);
-    drawText(`${bananaCount}`, rightStatX, panelY + panelH * 0.81, C.text, C.textShad);
+    drawText(`${distance}m`, leftStatX, panelY + panelH * 0.81, '#cbd5e1', '#06101a');
+    drawText(`${bananaCount}`, rightStatX, panelY + panelH * 0.81, '#cbd5e1', '#06101a');
 
     // === Best / New Record (OUTSIDE panel, with margin) ===
     const recSize = Math.max(15, Math.min(W * 0.045, 24));
@@ -3183,7 +2896,7 @@ function drawGameOver(){
         const btn1Y = btn2Y - gap - btnH;
         drawButton({
             x: W/2 - btnW/2, y: btn1Y, w: btnW, h: btnH,
-            label: '↻  JUGAR DE NUEVO',
+            label: '↻  REPETIR PRUEBA',
             primary: true, pulse: true,
             onTap: startGame,
         });
@@ -3191,7 +2904,7 @@ function drawGameOver(){
             x: W/2 - btnW/2, y: btn2Y, w: btnW, h: btnH2,
             label: 'MENÚ',
             primary: false,
-            onTap: () => { state = STATE.MENU; initMenuWorld(); },
+            onTap: () => { state = STATE.MENU; syncShopCTA(); initMenuWorld(); },
         });
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
