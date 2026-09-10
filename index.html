@@ -71,21 +71,10 @@
     #leaderboard-list li{counter-increment:rank;display:grid;grid-template-columns:2.2em 1fr auto;gap:8px;padding:9px 4px;border-bottom:1px solid #4a2818}
     #leaderboard-list li::before{content:counter(rank) '.';color:#a07050}
     .network-status{font-size:12px;color:#a07050;margin-top:12px}
-    #shop-cta{
-        position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));z-index:12;
-        transform:translateX(-50%);display:none;min-width:min(360px,calc(100vw - 36px));
-        padding:14px 18px;border:3px solid #07131d;background:#00c2ff;color:#07131d;
-        box-shadow:5px 5px #000;font:900 15px 'Courier New',monospace;text-align:center;
-        text-decoration:none;text-transform:uppercase;letter-spacing:.04em;
-    }
-    #shop-cta[data-visible="true"]{display:block}
-    #shop-cta:focus-visible{outline:3px solid #fff;outline-offset:4px}
-    @media (orientation:portrait){#shop-cta{bottom:max(24px,env(safe-area-inset-bottom));font-size:18px;padding:17px 18px}}
 </style>
 </head>
 <body>
 <div id="wrap"><canvas id="game"></canvas></div>
-<a id="shop-cta" href="https://arai-mic-web-390294125906.us-east1.run.app/" rel="noopener">VER EN TUKU</a>
 <div id="profile-controls" class="web-ui" hidden>
     <button id="name-button" class="pixel-button" type="button">JUGADOR</button>
     <button id="leaderboard-button" class="pixel-button primary" type="button">🏆 CLASIFICACIÓN</button>
@@ -153,14 +142,9 @@ function selectEdition(id){
     if (!TUKU_EDITIONS.some(item => item.id === id)) return;
     selectedEditionId = id;
     localStorage.setItem(SELECTED_EDITION_KEY, id);
-    syncShopCTA();
 }
-function syncShopCTA(){
-    const edition = selectedEdition();
-    shopCta.href = SHOP_URL;
-    shopCta.textContent = `VER ${edition.name} EN TUKU`;
-    shopCta.style.backgroundColor = edition.color;
-    shopCta.dataset.visible = state === STATE.WON ? 'true' : 'false';
+function openShop(){
+    window.location.href = SHOP_URL;
 }
 
 // ============================================================
@@ -175,7 +159,6 @@ const nameError = document.getElementById('name-error');
 const leaderboardModal = document.getElementById('leaderboard-modal');
 const leaderboardList = document.getElementById('leaderboard-list');
 const networkStatus = document.getElementById('network-status');
-const shopCta = document.getElementById('shop-cta');
 let playerName = normalizePlayerName(localStorage.getItem('mcc_player_name') || '');
 let leaderboard = [];
 let leaderboardSocket = null;
@@ -851,11 +834,8 @@ function stopMusic(){
 // ============================================================
 // GAME STATE
 // ============================================================
-const STATE = { MENU:0, PLAYING:1, DEAD:2, WON:3 };
-const TARGET_SCORE = 1000;
+const STATE = { MENU:0, PLAYING:1, DEAD:2 };
 let state = STATE.MENU;
-let levelCompleteFrame = 0;
-syncShopCTA();
 
 let worldX = 0;          // distance scrolled
 let speed = INIT_SPEED;  // current px/s
@@ -922,7 +902,7 @@ function pressJump(canvasX, canvasY){
     // events (banana grabs, landings, crashes) onto the player's next tap.
     drainHapticsOnGesture();
     // On menu / game-over, check button hits first
-    if ((state === STATE.MENU || state === STATE.DEAD || state === STATE.WON) && canvasX != null){
+    if ((state === STATE.MENU || state === STATE.DEAD) && canvasX != null){
         if (tryHitButton(canvasX, canvasY)) return;
     }
     if (state === STATE.MENU){
@@ -931,10 +911,6 @@ function pressJump(canvasX, canvasY){
     }
     if (state === STATE.DEAD){
         if (player.deadFrame > 0.6) startGame();
-        return;
-    }
-    if (state === STATE.WON){
-        if (levelCompleteFrame > 0.6) startGame();
         return;
     }
     // Buffered jump + tactile feedback for the jump itself
@@ -974,7 +950,6 @@ canvas.addEventListener('mouseup',    e => { e.preventDefault(); releaseJump(); 
 // ============================================================
 function startGame(){
     state = STATE.PLAYING;
-    syncShopCTA();
     worldX = 0;
     speed = INIT_SPEED;
     timePlaying = 0;
@@ -985,7 +960,6 @@ function startGame(){
     player.coyote = 0;
     player.bufferedJump = 0;
     player.deadFrame = 0;
-    levelCompleteFrame = 0;
     player.squash = 0;
     player.airTime = 0;
     segments.length = 0;
@@ -1015,29 +989,9 @@ function startGame(){
     if (audioCtx) startMusic();
 }
 
-function completeLevel(){
-    if (state !== STATE.PLAYING) return;
-    state = STATE.WON;
-    syncShopCTA();
-    levelCompleteFrame = 0;
-    distance = Math.floor(worldX / 10);
-    submitRun();
-    stopMusic();
-    haptic('heavy');
-    if (audioCtx && sfxEnabled){
-        playTone(523, 0.14, 'square', 0.20);
-        setTimeout(() => playTone(659, 0.14, 'square', 0.20), 120);
-        setTimeout(() => playTone(784, 0.22, 'square', 0.24), 240);
-    }
-    if (distance > bestDist){ bestDist = distance; localStorage.setItem('mcc_best_d', bestDist); }
-    if (bananaCount > bestBan){ bestBan = bananaCount; localStorage.setItem('mcc_best_b', bestBan); }
-    if (score > bestScore){ bestScore = score; localStorage.setItem('mcc_best_s', bestScore); }
-}
-
 function gameOver(reason){
     if (state !== STATE.PLAYING) return;
     state = STATE.DEAD;
-    syncShopCTA();
     deathReason = reason || 'fall';
     breakCombo();
     player.deadFrame = 0;
@@ -1462,8 +1416,6 @@ function update(dt){
         // continue physics for player falling
         player.vy += GRAVITY * dt;
         player.y += player.vy * dt;
-    } else if (state === STATE.WON){
-        levelCompleteFrame += dt;
     } else if (state === STATE.MENU){
         // Animate bananas in the background scroll
         for (const b of bananas) b.anim += dt * 4;
@@ -1761,11 +1713,6 @@ function checkCollisions(){
                     grav: 0,
                 });
             }
-
-            if (score >= TARGET_SCORE){
-                completeLevel();
-                return;
-            }
         }
     }
 
@@ -1847,7 +1794,6 @@ function render(){
 
     if (state === STATE.MENU)  drawMenu();
     if (state === STATE.DEAD)  drawGameOver();
-    if (state === STATE.WON)   drawLevelComplete();
     drawVignette();
 }
 
@@ -2366,7 +2312,7 @@ function drawHUD(){
     ctx.font = `bold ${Math.round(11 * k)}px "Courier New", monospace`;
     drawText('REND.', padX, row2Y + 7 * k, '#7890a3', '#000');
     ctx.font = `bold ${Math.round(22 * k)}px "Courier New", monospace`;
-    drawText(`${score} / ${TARGET_SCORE}`, padX + labelCol, row2Y, '#f5f5f4', '#06101a');
+    drawText(`${score}`, padX + labelCol, row2Y, '#f5f5f4', '#06101a');
 
     // ROW 3 — Distance (label + medium value)
     const row3Y = padY + rowH * 2;
@@ -2773,49 +2719,6 @@ function drawMenu(){
     ctx.textBaseline = 'top';
 }
 
-// --- LEVEL COMPLETE ---
-function drawLevelComplete(){
-    const fade = Math.min(0.82, levelCompleteFrame * 1.4);
-    ctx.fillStyle = `rgba(8,4,20,${fade})`;
-    ctx.fillRect(0, 0, W, H);
-    if (levelCompleteFrame < 0.2) return;
-
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    const isPortrait = H > W;
-    const edition = selectedEdition();
-    const titleSize = fitTextSize('¡CERTIFICACIÓN COMPLETADA!', W - 40, Math.min(W * 0.105, 58));
-    const titleY = H * (isPortrait ? 0.14 : 0.10);
-    ctx.font = `bold ${titleSize}px "Courier New", monospace`;
-    drawText('¡CERTIFICACIÓN COMPLETADA!', W/2, titleY, edition.color, '#06101a');
-
-    const panelW = Math.min(W * 0.85, 400);
-    const panelH = Math.min(H * (isPortrait ? 0.20 : 0.30), 160);
-    const panelX = W/2 - panelW/2;
-    const panelY = titleY + titleSize * 1.45;
-    drawPixelPanel(panelX, panelY, panelW, panelH);
-    ctx.font = `${Math.max(13, Math.round(panelH * 0.13))}px "Courier New", monospace`;
-    drawText(`${edition.name} · LISTO PARA LA CANCHA`, W/2, panelY + panelH * 0.12, '#94a3b8', '#000');
-    ctx.font = `bold ${Math.max(30, Math.round(panelH * 0.36))}px "Courier New", monospace`;
-    drawText(`${score}`, W/2, panelY + panelH * 0.30, edition.color, '#06101a');
-    ctx.font = `${Math.max(14, Math.round(panelH * 0.14))}px "Courier New", monospace`;
-    drawText(`${distance}m  ·  ${bananaCount} fichas`, W/2, panelY + panelH * 0.75, '#cbd5e1', '#06101a');
-
-    if (levelCompleteFrame > 0.5){
-        const btnW = Math.min(W * 0.78, 360);
-        const btnH = Math.min(H * (isPortrait ? 0.08 : 0.13), 72);
-        const btnY = H - btnH - (isPortrait ? 150 : 102);
-        drawButton({
-            x: W/2 - btnW/2, y: btnY, w: btnW, h: btnH,
-            label: '↻  REPETIR PRUEBA',
-            primary: true, pulse: true,
-            onTap: startGame,
-        });
-    }
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-}
-
 // --- GAME OVER ---
 function drawGameOver(){
     ctx.fillStyle = `rgba(3,8,13,${Math.min(0.80, player.deadFrame * 0.95)})`;
@@ -2904,7 +2807,7 @@ function drawGameOver(){
             x: W/2 - btnW/2, y: btn2Y, w: btnW, h: btnH2,
             label: 'MENÚ',
             primary: false,
-            onTap: () => { state = STATE.MENU; syncShopCTA(); initMenuWorld(); },
+            onTap: () => { state = STATE.MENU; initMenuWorld(); },
         });
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';

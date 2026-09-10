@@ -22,9 +22,15 @@ function pngInfo(file) {
 test('uses the definitive TUKU identity and exact shop URL', () => {
   assert.match(html, /<title>TUKU: No Te Caigas<\/title>/);
   assert.match(html, /const SHOP_URL = 'https:\/\/arai-mic-web-390294125906\.us-east1\.run\.app\/'/);
-  assert.match(html, /VER \$\{edition\.name\} EN TUKU/);
-  assert.match(html, /CERTIFICACIÓN COMPLETADA/);
   assert.match(html, /PRUEBA INTERRUMPIDA/);
+});
+
+test('game is endless — no win at 1000 points', () => {
+  assert.equal(html.includes('TARGET_SCORE'), false, 'TARGET_SCORE must be removed');
+  assert.equal(html.includes('completeLevel'), false, 'completeLevel must be removed');
+  assert.equal(html.includes('drawLevelComplete'), false, 'drawLevelComplete must be removed');
+  assert.equal(html.includes('CERTIFICACIÓN COMPLETADA'), false, 'win screen must be removed');
+  assert.match(html, /const STATE = \{ MENU:0, PLAYING:1, DEAD:2 \}/);
 });
 
 test('defines all four balanced visual editions and their sprites', () => {
