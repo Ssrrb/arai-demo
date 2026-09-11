@@ -5,14 +5,19 @@
   "description": "TUKU Lab pixel-art runner and realtime leaderboard server",
   "main": "server.js",
   "scripts": {
-    "start": "node --env-file-if-exists=.env server.js",
-    "check": "node --check server.js && node --check profanity.js",
-    "test": "node --test"
+    "dev": "node server.js",
+    "build": "node --check server.js && node --check firebase.js && node --check profanity.js",
+    "lint": "node --check server.js && node --check firebase.js && node --check profanity.js",
+    "start": "node server.js",
+    "check": "node --check server.js && node --check firebase.js && node --check profanity.js",
+    "test": "node --test",
+    "clear:db": "node scripts/clear-db.js"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
+    "firebase": "^12.19.0",
     "pg": "^8.23.0",
     "ws": "^8.18.3"
   }

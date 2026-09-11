@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "LeaderboardScore": {
+      "title": "Leaderboard Score",
+      "description": "Classification record storing player high scores and achievements",
+      "type": "object",
+      "properties": {
+        "player_key": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 16,
+          "pattern": "^[a-z0-9]{2,16}$",
+          "description": "Lowercase normalized unique identifier for the player"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9]{2,16}$",
+          "description": "Display name chosen by the player (alphanumeric)"
+        },
+        "score": {
+          "type": "integer",
+          "description": "Total score achieved in the run (non-negative)"
+        },
+        "distance": {
+          "type": "integer",
+          "description": "Distance traveled in the run (non-negative)"
+        },
+        "bananas": {
+          "type": "integer",
+          "description": "Tokens/bananas collected during the run (non-negative)"
+        },
+        "achieved_at": {
+          "type": "string",
+          "description": "ISO timestamp string of when the record was achieved"
+        }
+      },
+      "required": ["player_key", "name", "score", "distance", "bananas", "achieved_at"]
+    },
+    "RoundState": {
+      "title": "Round State",
+      "description": "State of the competition round and lock for the leaderboard",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Current status of the round: waiting, running, paused, or finished"
+        },
+        "duration": {
+          "type": "integer",
+          "description": "Total duration in seconds"
+        },
+        "remaining": {
+          "type": "integer",
+          "description": "Remaining duration in seconds"
+        },
+        "is_finished": {
+          "type": "boolean",
+          "description": "Whether the round is finalized and positions are locked"
+        },
+        "updated_at": {
+          "type": "string",
+          "description": "ISO timestamp string of last update"
+        }
+      },
+      "required": ["status", "duration", "remaining", "is_finished", "updated_at"]
+    }
+  },
+  "firestore": {
+    "/leaderboard_scores/{playerKey}": {
+      "schema": "LeaderboardScore",
+      "description": "Global leaderboard collection where each document ID is playerKey"
+    },
+    "/round_state/{stateId}": {
+      "schema": "RoundState",
+      "description": "Competition round state and freeze lock"
+    }
+  }
+}

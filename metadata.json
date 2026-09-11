@@ -1,0 +1,6 @@
+{
+  "name": "TUKU: No Te Caigas",
+  "description": "TUKU Lab pixel-art runner and realtime leaderboard server",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

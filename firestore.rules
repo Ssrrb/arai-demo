@@ -1,0 +1,107 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all unknown collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Health / connection test document
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 2 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidLeaderboardScore(data) {
+      return data.keys().hasAll(['player_key', 'name', 'score', 'distance', 'bananas', 'achieved_at']) &&
+             data.keys().size() == 6 &&
+             data.player_key is string &&
+             data.player_key.size() >= 2 &&
+             data.player_key.size() <= 16 &&
+             data.player_key.matches('^[a-z0-9]+$') &&
+             data.name is string &&
+             data.name.size() >= 2 &&
+             data.name.size() <= 16 &&
+             data.name.matches('^[A-Za-z0-9]+$') &&
+             data.score is int &&
+             data.score >= 0 &&
+             data.score <= 1000000000 &&
+             data.distance is int &&
+             data.distance >= 0 &&
+             data.distance <= 1000000000 &&
+             data.bananas is int &&
+             data.bananas >= 0 &&
+             data.bananas <= 1000000000 &&
+             data.achieved_at is string &&
+             data.achieved_at.size() >= 10 &&
+             data.achieved_at.size() <= 64;
+    }
+
+    function isValidRoundState(data) {
+      return data.keys().hasAll(['status', 'duration', 'remaining', 'is_finished', 'updated_at']) &&
+             data.keys().size() == 5 &&
+             data.status is string &&
+             data.status.size() >= 3 &&
+             data.status.size() <= 32 &&
+             data.duration is int &&
+             data.duration >= 0 &&
+             data.remaining is int &&
+             data.remaining >= 0 &&
+             data.is_finished is bool &&
+             data.updated_at is string &&
+             data.updated_at.size() >= 10 &&
+             data.updated_at.size() <= 64;
+    }
+
+    function isRoundActive() {
+      return !exists(/databases/$(database)/documents/round_state/current) ||
+             get(/databases/$(database)/documents/round_state/current).data.is_finished != true;
+    }
+
+    match /round_state/{stateId} {
+      allow get: if isValidId(stateId);
+      allow list: if true;
+      allow create, update: if isValidId(stateId) && isValidRoundState(incoming());
+      allow delete: if isValidId(stateId);
+    }
+
+    match /leaderboard_scores/{playerKey} {
+      // Leaderboard is globally visible for all players
+      allow get: if isValidId(playerKey);
+      allow list: if true;
+
+      // Allow registration of new player high score only if round has not finished
+      allow create: if isValidId(playerKey) &&
+                       incoming().player_key == playerKey &&
+                       isValidLeaderboardScore(incoming()) &&
+                       isRoundActive();
+
+      // Allow score updates only if round has not finished and score is strictly better
+      allow update: if isValidId(playerKey) &&
+                       isValidLeaderboardScore(incoming()) &&
+                       incoming().player_key == existing().player_key &&
+                       isRoundActive() &&
+                       (
+                         incoming().score > existing().score ||
+                         (incoming().score == existing().score && incoming().distance > existing().distance)
+                       ) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'score', 'distance', 'bananas', 'achieved_at']);
+
+      // Allow score deletion for maintenance/resets
+      allow delete: if isValidId(playerKey);
+    }
+  }
+}

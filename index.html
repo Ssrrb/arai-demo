@@ -59,17 +59,364 @@
     #profile-controls[hidden]{display:none}
     .pixel-button{border:2px solid #263746;border-radius:0;background:#101820;color:#cbd5e1;padding:8px 10px;font-weight:bold;box-shadow:3px 3px #000;cursor:pointer}
     .pixel-button.primary{background:#00c2ff;color:#07131d}
+    .pixel-button.small{padding:5px 8px;font-size:11px}
     .pixel-button:focus-visible,.name-input:focus-visible{outline:3px solid #ffe070;outline-offset:2px}
     .modal-backdrop{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(5,2,14,.88);touch-action:auto}
     .modal-backdrop[hidden]{display:none}
-    .modal-panel{width:min(440px,100%);max-height:min(680px,90vh);overflow:auto;border:4px solid #263746;background:#08111a;color:#cbd5e1;padding:24px;box-shadow:8px 8px #000;text-align:center}
+    .modal-panel{width:min(520px,95vw);max-height:min(780px,92vh);overflow-y:auto;border:4px solid #263746;background:#08111a;color:#cbd5e1;padding:22px 18px;box-shadow:8px 8px #000;text-align:center}
     .modal-panel h2{color:#00c2ff;margin-bottom:12px}.modal-panel p{margin-bottom:16px;line-height:1.4;color:#94a3b8}
     .name-input{width:100%;border:3px solid #475569;border-radius:0;background:#03080d;color:#fff;padding:12px;font:700 20px 'Courier New',monospace;text-align:center;text-transform:uppercase;margin-bottom:14px}
     .modal-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     #name-error{min-height:20px;color:#ff8060;margin:-5px 0 10px}
+
+    /* Clasificación: Temporizador seleccionable con sonido */
+    .timer-card{
+        margin:12px 0 16px;
+        background:#071018;
+        border:2px solid #1e3a5f;
+        padding:12px 14px;
+        text-align:center;
+        box-shadow:inset 0 0 16px rgba(0,0,0,0.6), 2px 2px #000;
+    }
+    .timer-header-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin-bottom:6px;
+        font-size:11px;
+        letter-spacing:1px;
+    }
+    .timer-title{color:#00c2ff;font-weight:bold;display:flex;align-items:center;gap:6px}
+    .timer-badge{
+        font-size:10px;
+        padding:2px 6px;
+        border:1px solid #334155;
+        background:#0f172a;
+        color:#94a3b8;
+        text-transform:uppercase;
+        font-weight:bold;
+    }
+    .timer-badge.running{
+        border-color:#00c2ff;
+        background:#032b44;
+        color:#38bdf8;
+        box-shadow:0 0 8px rgba(0,194,255,0.4);
+    }
+    .timer-badge.finished{
+        border-color:#f59e0b;
+        background:#451a03;
+        color:#fde047;
+        box-shadow:0 0 10px rgba(245,158,11,0.5);
+    }
+    .timer-clock{
+        margin:4px 0 6px;
+    }
+    .timer-display{
+        font-size:42px;
+        font-weight:900;
+        letter-spacing:3px;
+        color:#00c2ff;
+        text-shadow:0 0 14px rgba(0,194,255,0.45);
+        line-height:1.1;
+        font-variant-numeric:tabular-nums;
+        transition:color 0.2s, text-shadow 0.2s;
+    }
+    .timer-display.urgent{
+        color:#ff5722;
+        text-shadow:0 0 18px rgba(255,87,34,0.85);
+        animation:timerPulse 0.5s infinite alternate;
+    }
+    .timer-display.completed{
+        color:#ffe070;
+        text-shadow:0 0 22px rgba(255,224,112,0.9);
+    }
+    @keyframes timerPulse{
+        from{transform:scale(1)}
+        to{transform:scale(1.04)}
+    }
+    .timer-progress{
+        width:100%;
+        height:6px;
+        background:#020617;
+        border:1px solid #1e293b;
+        margin:6px 0 10px;
+        overflow:hidden;
+    }
+    .timer-progress-fill{
+        height:100%;
+        width:100%;
+        background:linear-gradient(90deg, #00c2ff, #38bdf8);
+        transition:width 0.25s linear;
+    }
+    .timer-progress-fill.urgent{
+        background:linear-gradient(90deg, #ff5722, #f59e0b);
+    }
+    .timer-progress-fill.completed{
+        background:linear-gradient(90deg, #ffe070, #f59e0b);
+    }
+
+    /* Selector de duración */
+    .timer-selector-section{
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+        margin-bottom:8px;
+    }
+    .timer-custom-row{
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:8px;
+        margin-top:4px;
+        flex-wrap:wrap;
+    }
+    .timer-select{
+        border:2px solid #263746;
+        border-radius:0;
+        background:#03080d;
+        color:#cbd5e1;
+        padding:6px 8px;
+        font:bold 11px 'Courier New',monospace;
+        cursor:pointer;
+        max-width:190px;
+        box-shadow:2px 2px #000;
+    }
+    .timer-select:focus-visible{outline:2px solid #00c2ff}
+    .timer-controls{
+        display:flex;
+        justify-content:center;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-top:10px;
+    }
+
+    /* Celebration Banner */
+    .timer-celebration-banner{
+        margin:12px 0 16px;
+        border:3px solid #ffe070;
+        background:linear-gradient(135deg, rgba(245,158,11,0.22) 0%, rgba(15,23,42,0.94) 50%, rgba(0,194,255,0.18) 100%);
+        padding:12px 10px;
+        box-shadow:0 0 22px rgba(255,224,112,0.38), inset 0 0 14px rgba(245,158,11,0.2);
+        animation:bannerPulse 1.6s infinite alternate;
+    }
+    .timer-celebration-banner[hidden]{display:none}
+    @keyframes bannerPulse{
+        from{box-shadow:0 0 12px rgba(255,224,112,0.25)}
+        to{box-shadow:0 0 24px rgba(255,224,112,0.6)}
+    }
+    .celebration-title{
+        color:#ffe070;
+        font-size:15px;
+        font-weight:900;
+        letter-spacing:1px;
+        margin-bottom:4px;
+        text-shadow:0 0 8px rgba(255,224,112,0.6);
+    }
+    .celebration-subtitle{
+        font-size:11px;
+        color:#cbd5e1;
+        margin-bottom:10px;
+    }
+    .celebration-podium-cards{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:8px;
+        margin-bottom:10px;
+    }
+    .podium-card{
+        border:2px solid;
+        padding:8px 6px;
+        background:#09121a;
+        text-align:center;
+    }
+    .podium-card.gold{
+        border-color:#ffe070;
+        background:linear-gradient(180deg, rgba(245,158,11,0.3) 0%, #081119 100%);
+        box-shadow:0 0 12px rgba(255,224,112,0.35);
+    }
+    .podium-card.silver{
+        border-color:#cbd5e1;
+        background:linear-gradient(180deg, rgba(148,163,184,0.3) 0%, #081119 100%);
+        box-shadow:0 0 12px rgba(203,213,225,0.28);
+    }
+    .podium-rank-tag{
+        font-size:10px;
+        font-weight:900;
+        margin-bottom:3px;
+        letter-spacing:0.5px;
+    }
+    .podium-card.gold .podium-rank-tag{color:#ffe070}
+    .podium-card.silver .podium-rank-tag{color:#e2e8f0}
+    .podium-card-name{
+        font-size:14px;
+        font-weight:bold;
+        color:#fff;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+    .podium-card-score{
+        font-size:11px;
+        font-weight:bold;
+        margin-top:2px;
+    }
+    .podium-card.gold .podium-card-score{color:#fde047}
+    .podium-card.silver .podium-card-score{color:#cbd5e1}
+
+    /* Leaderboard list enhanced styling */
     #leaderboard-list{list-style:none;text-align:left;margin:16px 0;counter-reset:rank}
-    #leaderboard-list li{counter-increment:rank;display:grid;grid-template-columns:2.2em 1fr auto;gap:8px;padding:9px 4px;border-bottom:1px solid #4a2818}
-    #leaderboard-list li::before{content:counter(rank) '.';color:#a07050}
+    #leaderboard-list li{
+        counter-increment:rank;
+        display:grid;
+        grid-template-columns:2.6em 1fr auto;
+        gap:8px;
+        padding:9px 8px;
+        border-bottom:1px solid #1a2936;
+        align-items:center;
+        transition:all 0.25s ease;
+    }
+    #leaderboard-list li::before{
+        content:counter(rank) '.';
+        color:#64748b;
+        font-weight:bold;
+    }
+    /* 1er puesto: Gold */
+    #leaderboard-list li.rank-first{
+        background:linear-gradient(90deg, rgba(245,158,11,0.22) 0%, rgba(255,224,112,0.06) 100%);
+        border:2px solid #f59e0b;
+        margin-bottom:6px;
+        box-shadow:0 0 8px rgba(245,158,11,0.25);
+    }
+    #leaderboard-list li.rank-first::before{
+        content:'🥇 1.';
+        color:#ffe070;
+    }
+    #leaderboard-list li.rank-first .player-name{
+        color:#ffe070;
+        font-weight:900;
+        display:flex;
+        align-items:center;
+        gap:6px;
+        flex-wrap:wrap;
+    }
+    #leaderboard-list li.rank-first .score-val{
+        color:#fde047;
+        font-weight:900;
+    }
+
+    /* 2ndo puesto: Silver */
+    #leaderboard-list li.rank-second{
+        background:linear-gradient(90deg, rgba(148,163,184,0.22) 0%, rgba(226,232,240,0.05) 100%);
+        border:2px solid #94a3b8;
+        margin-bottom:6px;
+        box-shadow:0 0 8px rgba(148,163,184,0.2);
+    }
+    #leaderboard-list li.rank-second::before{
+        content:'🥈 2.';
+        color:#cbd5e1;
+    }
+    #leaderboard-list li.rank-second .player-name{
+        color:#e2e8f0;
+        font-weight:bold;
+        display:flex;
+        align-items:center;
+        gap:6px;
+        flex-wrap:wrap;
+    }
+    #leaderboard-list li.rank-second .score-val{
+        color:#cbd5e1;
+        font-weight:bold;
+    }
+
+    /* 3er puesto: Bronze */
+    #leaderboard-list li.rank-third::before{
+        content:'🥉 3.';
+        color:#d97706;
+    }
+
+    /* When celebration / timer finished, spotlight 1st and 2nd */
+    #leaderboard-list li.rank-first.spotlight-active{
+        border-color:#ffe070;
+        animation:goldPulse 1.4s infinite alternate;
+        box-shadow:0 0 18px rgba(255,224,112,0.6), inset 0 0 10px rgba(245,158,11,0.28);
+    }
+    #leaderboard-list li.rank-second.spotlight-active{
+        border-color:#e2e8f0;
+        animation:silverPulse 1.4s infinite alternate;
+        box-shadow:0 0 16px rgba(226,232,240,0.5), inset 0 0 8px rgba(148,163,184,0.22);
+    }
+    @keyframes goldPulse{
+        from{border-color:#f59e0b;transform:scale(1)}
+        to{border-color:#fef08a;transform:scale(1.02)}
+    }
+    @keyframes silverPulse{
+        from{border-color:#94a3b8;transform:scale(1)}
+        to{border-color:#f8fafc;transform:scale(1.015)}
+    }
+    .winner-badge{
+        font-size:10px;
+        padding:1px 5px;
+        border-radius:2px;
+        font-weight:900;
+        text-transform:uppercase;
+        letter-spacing:0.5px;
+    }
+    .winner-badge.gold{
+        background:#f59e0b;
+        color:#000;
+    }
+    .winner-badge.silver{
+        background:#94a3b8;
+        color:#000;
+    }
+
+    /* Confetti canvas */
+    #confetti-canvas{
+        position:fixed;
+        inset:0;
+        width:100vw;
+        height:100vh;
+        pointer-events:none;
+        z-index:999;
+        display:none;
+    }
+    .pixel-button.danger{
+        background:#7f1d1d;
+        border-color:#ef4444;
+        color:#fecaca;
+    }
+    .pixel-button.danger:hover{
+        background:#991b1b;
+    }
+    .round-locked-banner{
+        margin:10px 0 14px;
+        padding:10px 12px;
+        background:rgba(220,38,38,0.22);
+        border:2px solid #ef4444;
+        color:#fecaca;
+        font-size:12px;
+        line-height:1.4;
+        text-align:center;
+        box-shadow:0 0 14px rgba(239,68,68,0.35);
+    }
+    .round-locked-banner[hidden]{display:none}
+    .round-toast{
+        position:fixed;
+        top:24px;
+        left:50%;
+        transform:translateX(-50%);
+        background:#1a0709;
+        border:2px solid #ef4444;
+        color:#fee2e2;
+        padding:12px 20px;
+        font:bold 13px 'Courier New',monospace;
+        z-index:99999;
+        box-shadow:0 8px 24px rgba(0,0,0,0.85), 0 0 18px rgba(239,68,68,0.5);
+        text-align:center;
+        max-width:min(90vw, 540px);
+        pointer-events:none;
+        transition:opacity 0.4s ease;
+    }
     .network-status{font-size:12px;color:#a07050;margin-top:12px}
 </style>
 </head>
@@ -94,11 +441,65 @@
 <div id="leaderboard-modal" class="modal-backdrop web-ui" hidden role="dialog" aria-modal="true" aria-labelledby="leaderboard-title">
     <section class="modal-panel">
         <h2 id="leaderboard-title">🏆 CLASIFICACIÓN EN VIVO</h2>
+
+        <!-- AVISO DE RONDA FINALIZADA Y CLASIFICACIÓN BLOQUEADA -->
+        <div id="round-locked-banner" class="round-locked-banner" hidden>
+            🔒 <strong>RONDA FINALIZADA:</strong> La clasificación está cerrada definitivamente. El podio está asegurado y no se admiten nuevos ganadores ni cambios de posición.
+        </div>
+
+        <!-- TEMPORIZADOR SELECCIONABLE CON SONIDO -->
+        <div id="leaderboard-timer-card" class="timer-card">
+            <div class="timer-header-row">
+                <span class="timer-title">⏱️ TEMPORIZADOR DE RONDA</span>
+                <span id="timer-status-badge" class="timer-badge">EN ESPERA</span>
+            </div>
+            <div class="timer-clock">
+                <div id="timer-display" class="timer-display">02:00</div>
+                <div class="timer-progress">
+                    <div id="timer-progress-fill" class="timer-progress-fill"></div>
+                </div>
+            </div>
+            <div class="timer-selector-section">
+                <div class="timer-custom-row">
+                    <label for="timer-select" style="font-size:11px;color:#94a3b8;font-weight:bold;letter-spacing:1px;">TIEMPO:</label>
+                    <select id="timer-select" class="timer-select">
+                        <option value="15">15 Segundos</option>
+                        <option value="30">30 Segundos</option>
+                        <option value="45">45 Segundos</option>
+                        <option value="60">1 Minuto</option>
+                        <option value="90">1 Min 30s</option>
+                        <option value="120" selected>2 Minutos</option>
+                        <option value="180">3 Minutos</option>
+                        <option value="240">4 Minutos</option>
+                        <option value="300">5 Minutos</option>
+                        <option value="600">10 Minutos</option>
+                        <option value="900">15 Minutos</option>
+                    </select>
+                    <button id="timer-sub-btn" type="button" class="pixel-button small" title="Restar 15 segundos">-15s</button>
+                    <button id="timer-add-btn" type="button" class="pixel-button small" title="Sumar 15 segundos">+15s</button>
+                </div>
+            </div>
+            <div class="timer-controls">
+                <button id="timer-start-btn" class="pixel-button primary" type="button">▶ INICIAR</button>
+                <button id="timer-reset-btn" class="pixel-button" type="button">↺ REINICIAR</button>
+                <button id="timer-finish-btn" class="pixel-button danger" type="button" title="Finalizar y bloquear la ronda actual">🛑 FINALIZAR</button>
+            </div>
+        </div>
+
+        <!-- CELEBRACIÓN AL FINALIZAR TIEMPO: RESALTE 1ER Y 2NDO PUESTO -->
+        <div id="timer-celebration-banner" class="timer-celebration-banner" hidden>
+            <div class="celebration-title">🎉 ¡TIEMPO COMPLETADO! 🎉</div>
+            <div class="celebration-subtitle">¡PODIO OFICIAL DEFINIDO Y CLASIFICACIÓN CERRADA!</div>
+            <div id="celebration-podium-cards" class="celebration-podium-cards"></div>
+            <button id="confetti-more-btn" type="button" class="pixel-button primary small">🎊 TIRAR MÁS CONFETTI</button>
+        </div>
+
         <ol id="leaderboard-list"><li><span>Cargando…</span><strong>—</strong></li></ol>
         <button id="leaderboard-close" class="pixel-button primary" type="button">CERRAR</button>
         <div id="network-status" class="network-status">Conectando…</div>
     </section>
 </div>
+<canvas id="confetti-canvas"></canvas>
 <div id="orient">
     <div>
         <span class="icon">📱</span>
@@ -182,36 +583,539 @@ function requestStartGame(){
     if (!playerName) openNamePicker(true);
     else startGame();
 }
+// ============================================================
+// CLASIFICACIÓN: TEMPORIZADOR, SONIDO, CONFETTI Y RESALTE 1º/2º
+// ============================================================
+let timerDuration = 120; // Segundos por defecto (2 minutos)
+let timerRemaining = 120;
+let timerInterval = null;
+let timerRunning = false;
+let timerSoundEnabled = true;
+let timerFinished = false;
+
+const timerDisplay = document.getElementById('timer-display');
+const timerProgressFill = document.getElementById('timer-progress-fill');
+const timerStatusBadge = document.getElementById('timer-status-badge');
+const timerSelect = document.getElementById('timer-select');
+const timerStartBtn = document.getElementById('timer-start-btn');
+const timerResetBtn = document.getElementById('timer-reset-btn');
+const timerSoundBtn = document.getElementById('timer-sound-btn');
+const timerSubBtn = document.getElementById('timer-sub-btn');
+const timerAddBtn = document.getElementById('timer-add-btn');
+const timerCelebrationBanner = document.getElementById('timer-celebration-banner');
+const celebrationPodiumCards = document.getElementById('celebration-podium-cards');
+const confettiMoreBtn = document.getElementById('confetti-more-btn');
+const confettiCanvas = document.getElementById('confetti-canvas');
+const roundLockedBanner = document.getElementById('round-locked-banner');
+const timerFinishBtn = document.getElementById('timer-finish-btn');
+
+function formatTimer(sec){
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function updateTimerDisplayUI(){
+    if (!timerDisplay) return;
+    timerDisplay.textContent = formatTimer(timerRemaining);
+
+    const pct = timerDuration > 0 ? Math.max(0, Math.min(100, (timerRemaining / timerDuration) * 100)) : 0;
+    if (timerProgressFill){
+        timerProgressFill.style.width = `${pct}%`;
+        timerProgressFill.className = 'timer-progress-fill' + 
+            (timerFinished ? ' completed' : (timerRemaining <= 5 && timerRemaining > 0 ? ' urgent' : ''));
+    }
+
+    if (timerFinished){
+        timerDisplay.className = 'timer-display completed';
+        if (roundLockedBanner) roundLockedBanner.hidden = false;
+        if (timerStatusBadge){
+            timerStatusBadge.textContent = '¡FINALIZADO! (CERRADO)';
+            timerStatusBadge.className = 'timer-badge finished';
+        }
+    } else {
+        if (roundLockedBanner) roundLockedBanner.hidden = true;
+        if (timerRunning && timerRemaining <= 5 && timerRemaining > 0){
+            timerDisplay.className = 'timer-display urgent';
+        } else {
+            timerDisplay.className = 'timer-display';
+        }
+    }
+}
+
+function ensureTimerAudio(){
+    if (typeof initAudio === 'function') initAudio();
+    if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'suspended'){
+        audioCtx.resume().catch(() => {});
+    }
+}
+
+function playTimerTick(urgent = false){
+    if (!timerSoundEnabled) return;
+    ensureTimerAudio();
+    if (typeof audioCtx === 'undefined' || !audioCtx) return;
+    try {
+        const t = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = urgent ? 'square' : 'triangle';
+        osc.frequency.setValueAtTime(urgent ? 920 : 660, t);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(urgent ? 0.22 : 0.15, t + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+        osc.connect(g);
+        g.connect(typeof masterGain !== 'undefined' && masterGain ? masterGain : audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.09);
+    } catch(e){}
+}
+
+function playTimerFanfare(){
+    if (!timerSoundEnabled) return;
+    ensureTimerAudio();
+    if (typeof audioCtx === 'undefined' || !audioCtx) return;
+    try {
+        const t = audioCtx.currentTime;
+        const dest = typeof masterGain !== 'undefined' && masterGain ? masterGain : audioCtx.destination;
+        const notes = [
+            { f: 523.25, time: 0.00, dur: 0.12, type: 'triangle', vol: 0.25 },
+            { f: 659.25, time: 0.11, dur: 0.12, type: 'triangle', vol: 0.25 },
+            { f: 783.99, time: 0.22, dur: 0.14, type: 'triangle', vol: 0.28 },
+            { f: 1046.50, time: 0.35, dur: 0.40, type: 'square', vol: 0.28 },
+            { f: 523.25, time: 0.45, dur: 0.70, type: 'triangle', vol: 0.18 },
+            { f: 659.25, time: 0.45, dur: 0.70, type: 'triangle', vol: 0.18 },
+            { f: 783.99, time: 0.45, dur: 0.70, type: 'triangle', vol: 0.20 },
+            { f: 1046.50, time: 0.45, dur: 0.75, type: 'square', vol: 0.22 },
+            { f: 1318.51, time: 0.75, dur: 0.45, type: 'sine', vol: 0.16 },
+            { f: 1567.98, time: 0.95, dur: 0.55, type: 'sine', vol: 0.18 },
+            { f: 2093.00, time: 1.15, dur: 0.70, type: 'sine', vol: 0.20 },
+        ];
+        notes.forEach(n => {
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.type = n.type;
+            osc.frequency.setValueAtTime(n.f, t + n.time);
+            g.gain.setValueAtTime(0, t + n.time);
+            g.gain.linearRampToValueAtTime(n.vol, t + n.time + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.001, t + n.time + n.dur);
+            osc.connect(g);
+            g.connect(dest);
+            osc.start(t + n.time);
+            osc.stop(t + n.time + n.dur + 0.05);
+        });
+    } catch(e){}
+}
+
+// Confetti engine
+let confettiParticles = [];
+let confettiAnimId = null;
+
+function fireConfetti(count = 160){
+    if (!confettiCanvas) return;
+    confettiCanvas.style.display = 'block';
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+
+    const colors = ['#ffe070', '#f59e0b', '#00c2ff', '#38bdf8', '#ff5722', '#10b981', '#ec4899', '#f8fafc', '#a855f7'];
+    for (let i = 0; i < count; i++){
+        const fromLeft = Math.random() < 0.5;
+        confettiParticles.push({
+            x: fromLeft ? Math.random() * (confettiCanvas.width * 0.35) : confettiCanvas.width * 0.65 + Math.random() * (confettiCanvas.width * 0.35),
+            y: Math.random() * (confettiCanvas.height * 0.25) - 10,
+            vx: fromLeft ? Math.random() * 6 + 1.5 : -Math.random() * 6 - 1.5,
+            vy: Math.random() * -7 - 4,
+            size: Math.random() * 8 + 6,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            rotationSpeed: (Math.random() - 0.5) * 8,
+            tilt: Math.random() * 10 - 5,
+            tiltAngle: Math.random() * Math.PI,
+            tiltSpeed: Math.random() * 0.08 + 0.04,
+            gravity: Math.random() * 0.12 + 0.18,
+            opacity: 1,
+            decay: Math.random() * 0.0025 + 0.0012
+        });
+    }
+
+    if (!confettiAnimId){
+        confettiAnimId = requestAnimationFrame(updateConfetti);
+    }
+}
+
+function updateConfetti(){
+    if (!confettiCanvas) return;
+    const ctxC = confettiCanvas.getContext('2d');
+    ctxC.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+
+    for (let i = confettiParticles.length - 1; i >= 0; i--){
+        const p = confettiParticles[i];
+        p.vy += p.gravity;
+        p.vx *= 0.99;
+        p.x += p.vx + Math.sin(p.tiltAngle) * 1.5;
+        p.y += p.vy;
+        p.rotation += p.rotationSpeed;
+        p.tiltAngle += p.tiltSpeed;
+        p.tilt = Math.sin(p.tiltAngle) * p.size;
+        p.opacity -= p.decay;
+
+        if (p.y > confettiCanvas.height + 30 || p.opacity <= 0){
+            confettiParticles.splice(i, 1);
+            continue;
+        }
+
+        ctxC.save();
+        ctxC.translate(p.x, p.y);
+        ctxC.rotate((p.rotation * Math.PI) / 180);
+        ctxC.globalAlpha = Math.max(0, p.opacity);
+        ctxC.fillStyle = p.color;
+        ctxC.fillRect(-p.size / 2, -p.tilt / 2, p.size, Math.max(2, Math.abs(p.tilt)));
+        ctxC.restore();
+    }
+
+    if (confettiParticles.length > 0){
+        confettiAnimId = requestAnimationFrame(updateConfetti);
+    } else {
+        confettiAnimId = null;
+        confettiCanvas.style.display = 'none';
+    }
+}
+
+window.addEventListener('resize', () => {
+    if (confettiCanvas && confettiParticles.length > 0){
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+    }
+});
+
+function sendRoundAction(action, extra = {}){
+    if (leaderboardSocket && leaderboardSocket.readyState === WebSocket.OPEN){
+        try {
+            leaderboardSocket.send(JSON.stringify({ type: 'roundAction', action, ...extra }));
+        } catch (e){
+            console.warn('[RoundAction] WS error:', e);
+        }
+    }
+}
+
+function syncTimerPresetButtons(sec){
+    // Presets pills removed per UI requirements
+}
+
+function setTimerDuration(sec){
+    stopTimer();
+    timerDuration = Math.max(5, Math.min(3600, sec));
+    timerRemaining = timerDuration;
+    timerFinished = false;
+    if (timerStatusBadge){
+        timerStatusBadge.textContent = 'EN ESPERA';
+        timerStatusBadge.className = 'timer-badge';
+    }
+    if (timerStartBtn) timerStartBtn.textContent = '▶ INICIAR';
+    if (timerCelebrationBanner) timerCelebrationBanner.hidden = true;
+    if (roundLockedBanner) roundLockedBanner.hidden = true;
+    if (timerSelect) {
+        const exists = Array.from(timerSelect.options).some(o => parseInt(o.value, 10) === timerDuration);
+        if (exists) timerSelect.value = String(timerDuration);
+    }
+    syncTimerPresetButtons(timerDuration);
+    updateTimerDisplayUI();
+    renderLeaderboard();
+    sendRoundAction('setDuration', { duration: timerDuration });
+}
+
+function stopTimer(){
+    if (timerInterval){
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    timerRunning = false;
+}
+
+function startTimer(notifyServer = true){
+    ensureTimerAudio();
+    if (timerFinished || timerRemaining <= 0){
+        timerRemaining = timerDuration;
+        timerFinished = false;
+        if (timerCelebrationBanner) timerCelebrationBanner.hidden = true;
+        if (roundLockedBanner) roundLockedBanner.hidden = true;
+        renderLeaderboard();
+    }
+    timerRunning = true;
+    if (timerStartBtn) timerStartBtn.textContent = '⏸ PAUSAR';
+    if (timerStatusBadge){
+        timerStatusBadge.textContent = 'EN CURSO';
+        timerStatusBadge.className = 'timer-badge running';
+    }
+    if (roundLockedBanner) roundLockedBanner.hidden = true;
+    updateTimerDisplayUI();
+
+    if (notifyServer) sendRoundAction('start', { duration: timerDuration });
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        if (!timerRunning) return;
+        timerRemaining--;
+        if (timerRemaining > 0 && timerRemaining <= 5){
+            playTimerTick(timerRemaining <= 2);
+        }
+        if (timerRemaining <= 0){
+            finishTimer(true);
+            return;
+        }
+        updateTimerDisplayUI();
+    }, 1000);
+}
+
+function pauseTimer(notifyServer = true){
+    stopTimer();
+    if (timerStartBtn) timerStartBtn.textContent = '▶ REANUDAR';
+    if (timerStatusBadge){
+        timerStatusBadge.textContent = 'PAUSADO';
+        timerStatusBadge.className = 'timer-badge';
+    }
+    updateTimerDisplayUI();
+    if (notifyServer) sendRoundAction('pause');
+}
+
+function finishTimer(notifyServer = true){
+    timerRemaining = 0;
+    stopTimer();
+    timerFinished = true;
+    if (timerStartBtn) timerStartBtn.textContent = '▶ INICIAR';
+    if (timerStatusBadge){
+        timerStatusBadge.textContent = '¡FINALIZADO!';
+        timerStatusBadge.className = 'timer-badge finished';
+    }
+    if (roundLockedBanner) roundLockedBanner.hidden = false;
+    updateTimerDisplayUI();
+    playTimerFanfare();
+    fireConfetti(180);
+    renderLeaderboard();
+    if (notifyServer) sendRoundAction('finish');
+}
+
+function toggleTimer(){
+    if (timerRunning) pauseTimer();
+    else startTimer();
+}
+
+function resetTimer(notifyServer = true){
+    stopTimer();
+    timerFinished = false;
+    timerRemaining = timerDuration;
+    if (timerStartBtn) timerStartBtn.textContent = '▶ INICIAR';
+    if (timerStatusBadge){
+        timerStatusBadge.textContent = 'EN ESPERA';
+        timerStatusBadge.className = 'timer-badge';
+    }
+    if (timerCelebrationBanner) timerCelebrationBanner.hidden = true;
+    if (roundLockedBanner) roundLockedBanner.hidden = true;
+    confettiParticles.length = 0;
+    if (confettiCanvas) confettiCanvas.style.display = 'none';
+    if (confettiAnimId){ cancelAnimationFrame(confettiAnimId); confettiAnimId = null; }
+    updateTimerDisplayUI();
+    renderLeaderboard();
+    if (notifyServer) sendRoundAction('reset', { duration: timerDuration });
+}
+
+function syncServerRoundState(state){
+    if (!state) return;
+    if (typeof state.duration === 'number' && state.duration > 0){
+        timerDuration = state.duration;
+        if (timerSelect && !timerRunning){
+            const exists = Array.from(timerSelect.options).some(o => parseInt(o.value, 10) === timerDuration);
+            if (exists) timerSelect.value = String(timerDuration);
+        }
+    }
+    if (typeof state.remaining === 'number'){
+        timerRemaining = Math.max(0, state.remaining);
+    }
+    const serverFinished = Boolean(state.isFinished || state.status === 'finished');
+    if (serverFinished && !timerFinished){
+        playTimerFanfare();
+        fireConfetti(180);
+    }
+    timerFinished = serverFinished;
+    timerRunning = state.status === 'running';
+
+    if (timerFinished){
+        if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+        if (timerStatusBadge){
+            timerStatusBadge.textContent = '¡FINALIZADO!';
+            timerStatusBadge.className = 'timer-badge finished';
+        }
+        if (timerStartBtn) timerStartBtn.textContent = '▶ INICIAR';
+        if (roundLockedBanner) roundLockedBanner.hidden = false;
+    } else if (timerRunning){
+        if (timerStatusBadge){
+            timerStatusBadge.textContent = 'EN CURSO';
+            timerStatusBadge.className = 'timer-badge running';
+        }
+        if (timerStartBtn) timerStartBtn.textContent = '⏸ PAUSAR';
+        if (roundLockedBanner) roundLockedBanner.hidden = true;
+        if (!timerInterval){
+            timerInterval = setInterval(() => {
+                if (!timerRunning) return;
+                timerRemaining--;
+                if (timerRemaining > 0 && timerRemaining <= 5){
+                    playTimerTick(timerRemaining <= 2);
+                }
+                if (timerRemaining <= 0){
+                    finishTimer(true);
+                    return;
+                }
+                updateTimerDisplayUI();
+            }, 1000);
+        }
+    } else if (state.status === 'paused'){
+        if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+        if (timerStatusBadge){
+            timerStatusBadge.textContent = 'PAUSADO';
+            timerStatusBadge.className = 'timer-badge';
+        }
+        if (timerStartBtn) timerStartBtn.textContent = '▶ REANUDAR';
+        if (roundLockedBanner) roundLockedBanner.hidden = true;
+    } else {
+        if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+        if (timerStatusBadge){
+            timerStatusBadge.textContent = 'EN ESPERA';
+            timerStatusBadge.className = 'timer-badge';
+        }
+        if (timerStartBtn) timerStartBtn.textContent = '▶ INICIAR';
+        if (roundLockedBanner) roundLockedBanner.hidden = true;
+    }
+
+    updateTimerDisplayUI();
+    renderLeaderboard();
+}
+
+function toggleTimerSound(){
+    timerSoundEnabled = !timerSoundEnabled;
+    if (timerSoundBtn){
+        timerSoundBtn.textContent = timerSoundEnabled ? '🔊 SONIDO: SÍ' : '🔇 SONIDO: NO';
+    }
+    if (timerSoundEnabled){
+        playTimerTick(false);
+    }
+}
+
+function updateCelebrationPodium(){
+    if (!timerCelebrationBanner || !celebrationPodiumCards) return;
+    if (!timerFinished){
+        timerCelebrationBanner.hidden = true;
+        return;
+    }
+    timerCelebrationBanner.hidden = false;
+    celebrationPodiumCards.replaceChildren();
+
+    const p1 = leaderboard[0];
+    const p2 = leaderboard[1];
+
+    const card1 = document.createElement('div');
+    card1.className = 'podium-card gold';
+    card1.innerHTML = `
+        <div class="podium-rank-tag">🥇 1º PUESTO · CAMPEÓN</div>
+        <div class="podium-card-name">${p1 ? p1.name : '—'}</div>
+        <div class="podium-card-score">${p1 ? `${p1.score} PUNTOS` : 'Sin registro'}</div>
+    `;
+
+    const card2 = document.createElement('div');
+    card2.className = 'podium-card silver';
+    card2.innerHTML = `
+        <div class="podium-rank-tag">🥈 2º PUESTO · SUBCAMPEÓN</div>
+        <div class="podium-card-name">${p2 ? p2.name : '—'}</div>
+        <div class="podium-card-score">${p2 ? `${p2.score} PUNTOS` : 'Sin registro'}</div>
+    `;
+
+    celebrationPodiumCards.append(card1, card2);
+}
+
 function renderLeaderboard(){
     leaderboardList.replaceChildren();
     if (!leaderboard.length){
         const li = document.createElement('li');
         li.innerHTML = '<span>Aún no hay puntuaciones</span><strong>—</strong>';
         leaderboardList.appendChild(li);
+        updateCelebrationPodium();
         return;
     }
-    leaderboard.slice(0, 10).forEach(entry => {
+    leaderboard.slice(0, 10).forEach((entry, index) => {
         const li = document.createElement('li');
-        const name = document.createElement('span');
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'player-name';
         const scoreText = document.createElement('strong');
-        name.textContent = entry.name;
+        scoreText.className = 'score-val';
         scoreText.textContent = `${entry.score} puntos`;
-        li.append(name, scoreText);
+
+        if (index === 0){
+            li.classList.add('rank-first');
+            if (timerFinished) li.classList.add('spotlight-active');
+            nameSpan.innerHTML = `<span>${entry.name}</span> <span class="winner-badge gold">👑 1º PUESTO</span>`;
+        } else if (index === 1){
+            li.classList.add('rank-second');
+            if (timerFinished) li.classList.add('spotlight-active');
+            nameSpan.innerHTML = `<span>${entry.name}</span> <span class="winner-badge silver">🥈 2º PUESTO</span>`;
+        } else if (index === 2){
+            li.classList.add('rank-third');
+            nameSpan.textContent = entry.name;
+        } else {
+            nameSpan.textContent = entry.name;
+        }
+
+        li.append(nameSpan, scoreText);
         leaderboardList.appendChild(li);
     });
+
+    updateCelebrationPodium();
+}
+async function fetchLeaderboardHttp(){
+    try {
+        const response = await fetch('/api/leaderboard', { cache: 'no-store' });
+        if (response.ok){
+            const data = await response.json();
+            if (Array.isArray(data.entries)){
+                leaderboard = data.entries;
+                renderLeaderboard();
+            }
+        }
+    } catch (_){}
+}
+async function fetchRoundStateHttp(){
+    try {
+        const response = await fetch('/api/round-state', { cache: 'no-store' });
+        if (response.ok){
+            const data = await response.json();
+            if (data.roundState){
+                syncServerRoundState(data.roundState);
+            }
+        }
+    } catch (_){}
 }
 function connectLeaderboard(){
+    fetchLeaderboardHttp();
+    fetchRoundStateHttp();
     if (!location.host || leaderboardSocket?.readyState === WebSocket.OPEN) return;
     clearTimeout(leaderboardRetry);
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     leaderboardSocket = new WebSocket(`${protocol}//${location.host}/ws`);
-    leaderboardSocket.addEventListener('open', () => { networkStatus.textContent = 'Actualizaciones en vivo activas'; });
+    leaderboardSocket.addEventListener('open', () => { networkStatus.textContent = 'En vivo'; });
     leaderboardSocket.addEventListener('message', event => {
         try {
             const message = JSON.parse(event.data);
             if (message.type === 'leaderboard' && Array.isArray(message.entries)){
                 leaderboard = message.entries;
                 renderLeaderboard();
+            }
+            if (message.type === 'roundState' && message.roundState){
+                syncServerRoundState(message.roundState);
+            }
+            if (message.type === 'scoreResult'){
+                if (!message.accepted && message.reason === 'round-finished'){
+                    timerFinished = true;
+                    updateTimerDisplayUI();
+                    renderLeaderboard();
+                    showRoundFinishedNotification(message.message || 'La ronda ha finalizado. No se permiten nuevos ganadores ni subir de posiciones.');
+                }
             }
         } catch (error){ console.warn('Invalid leaderboard update', error); }
     });
@@ -221,7 +1125,30 @@ function connectLeaderboard(){
     });
     leaderboardSocket.addEventListener('error', () => leaderboardSocket.close());
 }
+let roundToastTimeout = null;
+function showRoundFinishedNotification(messageText){
+    let toast = document.getElementById('round-notification-toast');
+    if (!toast){
+        toast = document.createElement('div');
+        toast.id = 'round-notification-toast';
+        toast.className = 'round-toast';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = messageText;
+    toast.style.opacity = '1';
+    toast.hidden = false;
+    clearTimeout(roundToastTimeout);
+    roundToastTimeout = setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => { toast.hidden = true; }, 400);
+    }, 4500);
+}
 function submitRun(){
+    if (timerFinished){
+        console.warn('[TUKU] Ronda finalizada: Bloqueado envío de puntuación. El podio y las posiciones están cerrados.');
+        showRoundFinishedNotification('⛔ RONDA FINALIZADA: Puntuación no registrada. El podio y las posiciones están cerrados.');
+        return;
+    }
     if (!playerName || score <= 0 || !leaderboardSocket || leaderboardSocket.readyState !== WebSocket.OPEN) return;
     const runId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
     leaderboardSocket.send(JSON.stringify({ type:'submitScore', runId, name:playerName, score, distance, bananas:bananaCount }));
@@ -266,8 +1193,29 @@ nameForm.addEventListener('submit', async event => {
 });
 document.getElementById('name-cancel').addEventListener('click', closeNamePicker);
 nameButton.addEventListener('click', () => openNamePicker(false));
-document.getElementById('leaderboard-button').addEventListener('click', () => { leaderboardModal.hidden = false; renderLeaderboard(); });
-document.getElementById('leaderboard-close').addEventListener('click', () => { leaderboardModal.hidden = true; });
+document.getElementById('leaderboard-button').addEventListener('click', () => {
+    leaderboardModal.hidden = false;
+    updateTimerDisplayUI();
+    renderLeaderboard();
+});
+document.getElementById('leaderboard-close').addEventListener('click', () => {
+    leaderboardModal.hidden = true;
+});
+
+// Listener bindings para temporizador y confetti en clasificación
+if (timerStartBtn) timerStartBtn.addEventListener('click', toggleTimer);
+if (timerResetBtn) timerResetBtn.addEventListener('click', resetTimer);
+if (timerFinishBtn) timerFinishBtn.addEventListener('click', () => finishTimer(true));
+if (timerSoundBtn) timerSoundBtn.addEventListener('click', toggleTimerSound);
+if (timerSubBtn) timerSubBtn.addEventListener('click', () => setTimerDuration(timerDuration - 15));
+if (timerAddBtn) timerAddBtn.addEventListener('click', () => setTimerDuration(timerDuration + 15));
+if (timerSelect) timerSelect.addEventListener('change', () => setTimerDuration(parseInt(timerSelect.value, 10)));
+if (confettiMoreBtn) confettiMoreBtn.addEventListener('click', () => {
+    fireConfetti(150);
+    playTimerFanfare();
+});
+
+updateTimerDisplayUI();
 updateProfileUI();
 connectLeaderboard();
 
@@ -2707,6 +3655,14 @@ function drawMenu(){
     ctx.textBaseline = 'top';
     drawText('Mantén pulsado para saltar más alto', W/2, btnY + btnH + 10, '#7890a3', '#000');
 
+    if (timerFinished){
+        const lockBadgeSize = isLandscape ? 11 : 13;
+        ctx.font = `bold ${lockBadgeSize}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        drawText('🔒 RONDA FINALIZADA · POSICIONES BLOQUEADAS', W/2, btnY + btnH + (isLandscape ? 26 : 30), '#f87171', '#000');
+    }
+
     if (bestScore > 0 || bestDist > 0){
         const recSize = isLandscape ? 11 : 15;
         const badgeY = H - (isLandscape ? 20 : 42);
@@ -2787,6 +3743,14 @@ function drawGameOver(){
         ctx.font = `${recSize}px "Courier New", monospace`;
         drawText(`Récord: ${bestScore} puntos · ${bestDist}m`,
                  W/2, recY, '#a07050', '#000');
+    }
+
+    if (timerFinished){
+        const lockNoticeSize = Math.max(10, Math.min(W * 0.032, 13));
+        ctx.font = `bold ${lockNoticeSize}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        drawText('🔒 RONDA FINALIZADA · POSICIONES BLOQUEADAS', W/2, recY + recSize * 1.35, '#f87171', '#000');
     }
 
     // === BUTTONS — anchored to the BOTTOM of the screen ===
