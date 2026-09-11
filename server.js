@@ -19,12 +19,9 @@ let pool = null;
 let isDatabaseAvailable = false;
 let isFirebaseAvailable = false;
 
-// In-memory mock storage fallback
-const inMemoryScores = new Map([
-  ['piloto01', { player_key: 'piloto01', name: 'PILOTO01', score: 1250, distance: 3400, bananas: 42, achieved_at: new Date(Date.now() - 3600000) }],
-  ['tukupro', { player_key: 'tukupro', name: 'TUKUPRO', score: 980, distance: 2800, bananas: 31, achieved_at: new Date(Date.now() - 7200000) }],
-  ['cosmica', { player_key: 'cosmica', name: 'COSMICA', score: 720, distance: 2100, bananas: 24, achieved_at: new Date(Date.now() - 10800000) }],
-]);
+// Volatile fallback used only when neither Firestore nor PostgreSQL is available.
+// It starts empty so demo scores cannot be mistaken for persisted records.
+const inMemoryScores = new Map();
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -37,9 +34,7 @@ const mimeTypes = {
   '.ico': 'image/x-icon',
 };
 
-let entries = Array.from(inMemoryScores.values()).map(({ name, score, distance, bananas, achieved_at }) => ({
-  name, score, distance, bananas, achievedAt: new Date(achieved_at).toISOString(),
-}));
+let entries = [];
 let submissionChain = Promise.resolve();
 
 function cleanName(value) {
