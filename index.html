@@ -189,6 +189,68 @@
         flex-wrap:wrap;
         margin-top:10px;
     }
+    .timer-header-right{
+        display:flex;
+        align-items:center;
+        gap:8px;
+    }
+    .admin-toggle-btn{
+        border:1px solid #334155;
+        border-radius:0;
+        background:#101820;
+        color:#94a3b8;
+        font:bold 10px 'Courier New',monospace;
+        padding:2px 7px;
+        cursor:pointer;
+        box-shadow:2px 2px #000;
+        transition:all 0.15s ease;
+    }
+    .admin-toggle-btn:hover{
+        border-color:#00c2ff;
+        color:#00c2ff;
+    }
+    .admin-toggle-btn.active{
+        background:#032b44;
+        border-color:#ffe070;
+        color:#ffe070;
+        box-shadow:0 0 8px rgba(255,224,112,0.35);
+    }
+    .timer-admin-controls[hidden]{display:none}
+    .admin-session-indicator{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        background:#081b2a;
+        border:1px dashed #00c2ff;
+        padding:5px 8px;
+        margin:6px 0 8px;
+        font-size:10px;
+        color:#38bdf8;
+        font-weight:bold;
+        letter-spacing:1px;
+    }
+    .admin-inline-logout{
+        background:transparent;
+        border:none;
+        color:#ff8060;
+        font:bold 10px 'Courier New',monospace;
+        cursor:pointer;
+        text-decoration:underline;
+        padding:0;
+    }
+    .admin-inline-logout:hover{
+        color:#ff5722;
+    }
+    .timer-spectator-hint{
+        font-size:11px;
+        color:#64748b;
+        margin-top:8px;
+        padding:7px 10px;
+        background:rgba(2,6,23,0.65);
+        border:1px solid #1e293b;
+        line-height:1.4;
+    }
+    .timer-spectator-hint[hidden]{display:none}
 
     /* Celebration Banner */
     .timer-celebration-banner{
@@ -444,14 +506,17 @@
 
         <!-- AVISO DE RONDA FINALIZADA Y CLASIFICACIÓN BLOQUEADA -->
         <div id="round-locked-banner" class="round-locked-banner" hidden>
-            🔒 <strong>RONDA FINALIZADA:</strong> La clasificación está cerrada definitivamente. El podio está asegurado y no se admiten nuevos ganadores ni cambios de posición.
+            🔒 <strong>RONDA FINALIZADA:</strong>
         </div>
 
         <!-- TEMPORIZADOR SELECCIONABLE CON SONIDO -->
         <div id="leaderboard-timer-card" class="timer-card">
             <div class="timer-header-row">
                 <span class="timer-title">⏱️ TEMPORIZADOR DE RONDA</span>
-                <span id="timer-status-badge" class="timer-badge">EN ESPERA</span>
+                <div class="timer-header-right">
+                    <span id="timer-status-badge" class="timer-badge">EN ESPERA</span>
+                    <button id="admin-auth-toggle-btn" class="admin-toggle-btn" type="button" title="Acceso de Administrador para modificar tiempo">🔒 ADMIN</button>
+                </div>
             </div>
             <div class="timer-clock">
                 <div id="timer-display" class="timer-display">02:00</div>
@@ -459,30 +524,43 @@
                     <div id="timer-progress-fill" class="timer-progress-fill"></div>
                 </div>
             </div>
-            <div class="timer-selector-section">
-                <div class="timer-custom-row">
-                    <label for="timer-select" style="font-size:11px;color:#94a3b8;font-weight:bold;letter-spacing:1px;">TIEMPO:</label>
-                    <select id="timer-select" class="timer-select">
-                        <option value="15">15 Segundos</option>
-                        <option value="30">30 Segundos</option>
-                        <option value="45">45 Segundos</option>
-                        <option value="60">1 Minuto</option>
-                        <option value="90">1 Min 30s</option>
-                        <option value="120" selected>2 Minutos</option>
-                        <option value="180">3 Minutos</option>
-                        <option value="240">4 Minutos</option>
-                        <option value="300">5 Minutos</option>
-                        <option value="600">10 Minutos</option>
-                        <option value="900">15 Minutos</option>
-                    </select>
-                    <button id="timer-sub-btn" type="button" class="pixel-button small" title="Restar 15 segundos">-15s</button>
-                    <button id="timer-add-btn" type="button" class="pixel-button small" title="Sumar 15 segundos">+15s</button>
+
+            <!-- CONTROLES EXCLUSIVOS DE ADMINISTRADOR -->
+            <div id="timer-admin-controls" class="timer-admin-controls" hidden>
+                <div class="admin-session-indicator">
+                    <span>👑 MODO ADMINISTRADOR ACTIVO</span>
+                    <button id="admin-logout-btn" class="admin-inline-logout" type="button">Cerrar sesión</button>
+                </div>
+                <div class="timer-selector-section">
+                    <div class="timer-custom-row">
+                        <label for="timer-select" style="font-size:11px;color:#94a3b8;font-weight:bold;letter-spacing:1px;">TIEMPO:</label>
+                        <select id="timer-select" class="timer-select">
+                            <option value="15">15 Segundos</option>
+                            <option value="30">30 Segundos</option>
+                            <option value="45">45 Segundos</option>
+                            <option value="60">1 Minuto</option>
+                            <option value="90">1 Min 30s</option>
+                            <option value="120" selected>2 Minutos</option>
+                            <option value="180">3 Minutos</option>
+                            <option value="240">4 Minutos</option>
+                            <option value="300">5 Minutos</option>
+                            <option value="600">10 Minutos</option>
+                            <option value="900">15 Minutos</option>
+                        </select>
+                        <button id="timer-sub-btn" type="button" class="pixel-button small" title="Restar 15 segundos">-15s</button>
+                        <button id="timer-add-btn" type="button" class="pixel-button small" title="Sumar 15 segundos">+15s</button>
+                    </div>
+                </div>
+                <div class="timer-controls">
+                    <button id="timer-start-btn" class="pixel-button primary" type="button">▶ INICIAR</button>
+                    <button id="timer-reset-btn" class="pixel-button" type="button">↺ REINICIAR</button>
+                    <button id="timer-finish-btn" class="pixel-button danger" type="button" title="Finalizar y bloquear la ronda actual">🛑 FINALIZAR</button>
                 </div>
             </div>
-            <div class="timer-controls">
-                <button id="timer-start-btn" class="pixel-button primary" type="button">▶ INICIAR</button>
-                <button id="timer-reset-btn" class="pixel-button" type="button">↺ REINICIAR</button>
-                <button id="timer-finish-btn" class="pixel-button danger" type="button" title="Finalizar y bloquear la ronda actual">🛑 FINALIZAR</button>
+
+            <!-- MENSAJE INFORMATIVO PARA PARTICIPANTES Y ESPECTADORES -->
+            <div id="timer-spectator-hint" class="timer-spectator-hint">
+                <span>👁️ Tablero y tiempo sincronizados en vivo. El control del reloj está reservado al administrador.</span>
             </div>
         </div>
 
@@ -497,6 +575,20 @@
         <ol id="leaderboard-list"><li><span>Cargando…</span><strong>—</strong></li></ol>
         <button id="leaderboard-close" class="pixel-button primary" type="button">CERRAR</button>
         <div id="network-status" class="network-status">Conectando…</div>
+    </section>
+</div>
+<div id="admin-auth-modal" class="modal-backdrop web-ui" hidden role="dialog" aria-modal="true" aria-labelledby="admin-auth-modal-title">
+    <section class="modal-panel" style="max-width:360px;">
+        <h2 id="admin-auth-modal-title">🔒 ACCESO ADMIN</h2>
+        <p style="font-size:12px;color:#94a3b8;margin-bottom:12px;line-height:1.4;">Ingresa la clave de administrador para modificar el temporizador y controlar la ronda en vivo.</p>
+        <form id="admin-auth-form" autocomplete="off">
+            <input type="password" id="admin-password-input" class="name-input" placeholder="CLAVE" maxlength="24" required autofocus style="margin-bottom:8px;">
+            <div id="admin-auth-error" style="min-height:18px;color:#ff8060;font-size:11px;font-weight:bold;margin-bottom:10px;"></div>
+            <div class="modal-actions">
+                <button type="submit" id="admin-auth-submit-btn" class="pixel-button primary">INGRESAR</button>
+                <button type="button" id="admin-auth-cancel-btn" class="pixel-button">CANCELAR</button>
+            </div>
+        </form>
     </section>
 </div>
 <canvas id="confetti-canvas"></canvas>
@@ -608,6 +700,94 @@ const confettiMoreBtn = document.getElementById('confetti-more-btn');
 const confettiCanvas = document.getElementById('confetti-canvas');
 const roundLockedBanner = document.getElementById('round-locked-banner');
 const timerFinishBtn = document.getElementById('timer-finish-btn');
+const timerAdminControls = document.getElementById('timer-admin-controls');
+const timerSpectatorHint = document.getElementById('timer-spectator-hint');
+const adminAuthToggleBtn = document.getElementById('admin-auth-toggle-btn');
+const adminLogoutBtn = document.getElementById('admin-logout-btn');
+const adminAuthModal = document.getElementById('admin-auth-modal');
+const adminAuthForm = document.getElementById('admin-auth-form');
+const adminPasswordInput = document.getElementById('admin-password-input');
+const adminAuthError = document.getElementById('admin-auth-error');
+const adminAuthCancelBtn = document.getElementById('admin-auth-cancel-btn');
+
+let currentAdminToken = sessionStorage.getItem('tuku_admin_token') || '';
+let isUserAdmin = false;
+
+function setAdminMode(active, token = ''){
+    isUserAdmin = Boolean(active);
+    if (active && token){
+        currentAdminToken = token;
+        sessionStorage.setItem('tuku_admin_token', token);
+    } else if (!active){
+        currentAdminToken = '';
+        sessionStorage.removeItem('tuku_admin_token');
+    }
+    if (timerAdminControls) timerAdminControls.hidden = !isUserAdmin;
+    if (timerSpectatorHint) timerSpectatorHint.hidden = isUserAdmin;
+    if (adminAuthToggleBtn){
+        if (isUserAdmin){
+            adminAuthToggleBtn.textContent = '👑 ADMIN';
+            adminAuthToggleBtn.classList.add('active');
+            adminAuthToggleBtn.title = 'Sesión de Administrador activa (clic para salir)';
+        } else {
+            adminAuthToggleBtn.textContent = '🔒 ADMIN';
+            adminAuthToggleBtn.classList.remove('active');
+            adminAuthToggleBtn.title = 'Acceso de Administrador para modificar tiempo';
+        }
+    }
+}
+
+function openAdminModal(){
+    if (adminAuthModal){
+        adminAuthModal.hidden = false;
+        if (adminPasswordInput){
+            adminPasswordInput.value = '';
+            adminPasswordInput.focus();
+        }
+        if (adminAuthError) adminAuthError.textContent = '';
+    }
+}
+
+function closeAdminModal(){
+    if (adminAuthModal) adminAuthModal.hidden = true;
+}
+
+async function verifyInitialAdminToken(){
+    const urlParams = new URLSearchParams(window.location.search);
+    const keyParam = urlParams.get('admin') || urlParams.get('key') || urlParams.get('admin_key');
+    if (keyParam){
+        try {
+            const resp = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: keyParam }),
+            });
+            const data = await resp.json();
+            if (data.ok && data.token){
+                setAdminMode(true, data.token);
+                return;
+            }
+        } catch {}
+    }
+
+    if (currentAdminToken){
+        try {
+            const resp = await fetch('/api/admin/verify', {
+                headers: { 'Authorization': `Bearer ${currentAdminToken}` },
+            });
+            const data = await resp.json();
+            if (data.ok && data.isAdmin){
+                setAdminMode(true, currentAdminToken);
+            } else {
+                setAdminMode(false);
+            }
+        } catch {
+            setAdminMode(false);
+        }
+    } else {
+        setAdminMode(false);
+    }
+}
 
 function formatTimer(sec){
     const m = Math.floor(sec / 60);
@@ -788,9 +968,18 @@ window.addEventListener('resize', () => {
 });
 
 function sendRoundAction(action, extra = {}){
+    if (!isUserAdmin){
+        openAdminModal();
+        return;
+    }
     if (leaderboardSocket && leaderboardSocket.readyState === WebSocket.OPEN){
         try {
-            leaderboardSocket.send(JSON.stringify({ type: 'roundAction', action, ...extra }));
+            leaderboardSocket.send(JSON.stringify({
+                type: 'roundAction',
+                action,
+                token: currentAdminToken,
+                ...extra
+            }));
         } catch (e){
             console.warn('[RoundAction] WS error:', e);
         }
@@ -802,6 +991,10 @@ function syncTimerPresetButtons(sec){
 }
 
 function setTimerDuration(sec){
+    if (!isUserAdmin){
+        openAdminModal();
+        return;
+    }
     stopTimer();
     timerDuration = Math.max(5, Math.min(3600, sec));
     timerRemaining = timerDuration;
@@ -832,6 +1025,10 @@ function stopTimer(){
 }
 
 function startTimer(notifyServer = true){
+    if (notifyServer && !isUserAdmin){
+        openAdminModal();
+        return;
+    }
     ensureTimerAudio();
     if (timerFinished || timerRemaining <= 0){
         timerRemaining = timerDuration;
@@ -867,6 +1064,10 @@ function startTimer(notifyServer = true){
 }
 
 function pauseTimer(notifyServer = true){
+    if (notifyServer && !isUserAdmin){
+        openAdminModal();
+        return;
+    }
     stopTimer();
     if (timerStartBtn) timerStartBtn.textContent = '▶ REANUDAR';
     if (timerStatusBadge){
@@ -878,6 +1079,10 @@ function pauseTimer(notifyServer = true){
 }
 
 function finishTimer(notifyServer = true){
+    if (notifyServer && !isUserAdmin){
+        openAdminModal();
+        return;
+    }
     timerRemaining = 0;
     stopTimer();
     timerFinished = true;
@@ -895,11 +1100,19 @@ function finishTimer(notifyServer = true){
 }
 
 function toggleTimer(){
+    if (!isUserAdmin){
+        openAdminModal();
+        return;
+    }
     if (timerRunning) pauseTimer();
     else startTimer();
 }
 
 function resetTimer(notifyServer = true){
+    if (notifyServer && !isUserAdmin){
+        openAdminModal();
+        return;
+    }
     stopTimer();
     timerFinished = false;
     timerRemaining = timerDuration;
@@ -1109,6 +1322,12 @@ function connectLeaderboard(){
             if (message.type === 'roundState' && message.roundState){
                 syncServerRoundState(message.roundState);
             }
+            if (message.type === 'roundActionResult'){
+                if (!message.ok && message.error === 'unauthorized'){
+                    setAdminMode(false);
+                    showRoundFinishedNotification('🔒 ' + (message.message || 'Se requiere clave de administrador.'));
+                }
+            }
             if (message.type === 'scoreResult'){
                 if (!message.accepted && message.reason === 'round-finished'){
                     timerFinished = true;
@@ -1215,9 +1434,64 @@ if (confettiMoreBtn) confettiMoreBtn.addEventListener('click', () => {
     playTimerFanfare();
 });
 
+// Listener bindings para autenticación de administrador
+if (adminAuthToggleBtn){
+    adminAuthToggleBtn.addEventListener('click', () => {
+        if (isUserAdmin){
+            if (confirm('¿Deseas cerrar la sesión de administrador?')){
+                setAdminMode(false);
+            }
+        } else {
+            openAdminModal();
+        }
+    });
+}
+if (adminLogoutBtn){
+    adminLogoutBtn.addEventListener('click', () => {
+        setAdminMode(false);
+    });
+}
+if (adminAuthCancelBtn){
+    adminAuthCancelBtn.addEventListener('click', closeAdminModal);
+}
+if (adminAuthModal){
+    adminAuthModal.addEventListener('click', (e) => {
+        if (e.target === adminAuthModal) closeAdminModal();
+    });
+}
+if (adminAuthForm){
+    adminAuthForm.addEventListener('submit', async event => {
+        event.preventDefault();
+        const pwd = (adminPasswordInput ? adminPasswordInput.value : '').trim();
+        if (!pwd) return;
+        if (adminAuthError) adminAuthError.textContent = 'Verificando…';
+        try {
+            const resp = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pwd })
+            });
+            const data = await resp.json();
+            if (data.ok && data.token){
+                setAdminMode(true, data.token);
+                closeAdminModal();
+            } else {
+                if (adminAuthError) adminAuthError.textContent = 'Clave incorrecta. Inténtalo de nuevo.';
+                if (adminPasswordInput){
+                    adminPasswordInput.value = '';
+                    adminPasswordInput.focus();
+                }
+            }
+        } catch (err){
+            if (adminAuthError) adminAuthError.textContent = 'Error al verificar clave con el servidor.';
+        }
+    });
+}
+
 updateTimerDisplayUI();
 updateProfileUI();
 connectLeaderboard();
+verifyInitialAdminToken();
 
 // ============================================================
 // CANVAS / RESIZE / LAYOUT

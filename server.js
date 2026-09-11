@@ -3,9 +3,21 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { WebSocketServer, WebSocket } = require('ws');
 const { hasProfanity } = require('./profanity');
 const fb = require('./firebase');
+
+const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '671944').trim();
+const activeAdminTokens = new Set();
+
+function isValidAdmin(tokenOrKey) {
+  if (!tokenOrKey) return false;
+  const str = String(tokenOrKey).trim();
+  if (!str) return false;
+  if (str === ADMIN_PASSWORD) return true;
+  return activeAdminTokens.has(str);
+}
 
 const PORT = 3000;
 const HOST = '0.0.0.0';
@@ -327,12 +339,51 @@ const server = http.createServer(async (request, response) => {
       return sendJson(response, 500, { ok: false, error: err.message });
     }
   }
+  if (request.method === 'POST' && pathname === '/api/admin/login') {
+    try {
+      const body = await readJsonBody(request);
+      const password = String(body.password || '').trim();
+      if (password === ADMIN_PASSWORD) {
+        const token = 'adm_' + crypto.randomBytes(16).toString('hex');
+        activeAdminTokens.add(token);
+        return sendJson(response, 200, { ok: true, token, message: 'Autenticación exitosa como administrador.' });
+      }
+      return sendJson(response, 401, { ok: false, error: 'invalid-password', message: 'Clave de administrador incorrecta.' });
+    } catch (err) {
+      return sendJson(response, 400, { ok: false, error: err.message });
+    }
+  }
+  if (request.method === 'POST' && pathname === '/api/admin/logout') {
+    try {
+      const body = await readJsonBody(request);
+      if (body && body.token) activeAdminTokens.delete(String(body.token).trim());
+      return sendJson(response, 200, { ok: true, message: 'Sesión de administrador finalizada.' });
+    } catch {
+      return sendJson(response, 200, { ok: true });
+    }
+  }
+  if (request.method === 'GET' && pathname === '/api/admin/verify') {
+    const authHeader = request.headers['authorization'] || '';
+    const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    const token = bearer || url.searchParams.get('token') || request.headers['x-admin-key'] || '';
+    return sendJson(response, 200, { ok: true, isAdmin: isValidAdmin(token) });
+  }
   if (request.method === 'GET' && pathname === '/api/round-state') {
     return sendJson(response, 200, { ok: true, roundState: getPublicRoundState() });
   }
   if (request.method === 'POST' && pathname === '/api/round-state') {
     try {
       const body = await readJsonBody(request);
+      const authHeader = request.headers['authorization'] || '';
+      const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+      const token = bearer || body.token || body.adminKey || request.headers['x-admin-key'] || '';
+      if (!isValidAdmin(token)) {
+        return sendJson(response, 403, {
+          ok: false,
+          error: 'unauthorized',
+          message: 'Solo un administrador puede modificar el temporizador de clasificación en vivo.'
+        });
+      }
       const updated = applyRoundAction(body.action, body);
       return sendJson(response, 200, { ok: true, roundState: updated });
     } catch (err) {
@@ -432,6 +483,16 @@ wss.on('connection', socket => {
     try { message = JSON.parse(raw.toString()); } catch { return; }
 
     if (message.type === 'roundAction') {
+      const token = message.token || message.adminKey;
+      if (!isValidAdmin(token)) {
+        safeSend(socket, {
+          type: 'roundActionResult',
+          ok: false,
+          error: 'unauthorized',
+          message: 'Acceso denegado: solo el administrador puede modificar el temporizador en vivo.'
+        });
+        return;
+      }
       const result = applyRoundAction(message.action, message);
       safeSend(socket, { type: 'roundActionResult', ok: true, roundState: result });
       return;
