@@ -3,7 +3,6 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const { Pool } = require('pg');
 const { WebSocketServer, WebSocket } = require('ws');
 const { hasProfanity } = require('./profanity');
 const fb = require('./firebase');
@@ -11,15 +10,10 @@ const fb = require('./firebase');
 const PORT = 3000;
 const HOST = '0.0.0.0';
 const ROOT = __dirname;
-const DATABASE_URL = process.env.DATABASE_URL;
 
-const isDummyDatabaseUrl = !DATABASE_URL || DATABASE_URL.includes('@HOST:') || DATABASE_URL.includes('USER:PASSWORD') || DATABASE_URL.includes('//USER:');
-
-let pool = null;
-let isDatabaseAvailable = false;
 let isFirebaseAvailable = false;
 
-// Volatile fallback used only when neither Firestore nor PostgreSQL is available.
+// Volatile fallback used only when Firestore is unavailable (e.g. offline).
 // It starts empty so demo scores cannot be mistaken for persisted records.
 const inMemoryScores = new Map();
 
@@ -220,35 +214,6 @@ async function initializeDatabase() {
   } catch (error) {
     console.warn('[AI Studio] Firebase connection test notice:', error.message);
   }
-
-  if (DATABASE_URL && !isDummyDatabaseUrl) {
-    try {
-      pool = new Pool({ connectionString: DATABASE_URL, max: 10, connectionTimeoutMillis: 3000 });
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS leaderboard_scores (
-          player_key VARCHAR(16) PRIMARY KEY,
-          name VARCHAR(16) NOT NULL,
-          score INTEGER NOT NULL CHECK (score >= 0),
-          distance INTEGER NOT NULL CHECK (distance >= 0),
-          bananas INTEGER NOT NULL CHECK (bananas >= 0),
-          achieved_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )
-      `);
-      await pool.query(`
-        CREATE INDEX IF NOT EXISTS leaderboard_scores_ranking_idx
-        ON leaderboard_scores (score DESC, distance DESC, achieved_at ASC)
-      `);
-      isDatabaseAvailable = true;
-      console.log('[AI Studio] Connected to PostgreSQL leaderboard database');
-    } catch (error) {
-      console.warn(`[AI Studio] PostgreSQL unavailable (${error.message})`);
-      if (pool) {
-        await pool.end().catch(() => {});
-        pool = null;
-      }
-      isDatabaseAvailable = false;
-    }
-  }
 }
 
 async function refreshLeaderboard() {
@@ -261,21 +226,6 @@ async function refreshLeaderboard() {
       }
     } catch (error) {
       console.warn('[AI Studio] Firestore fetch error, falling back:', error.message);
-    }
-  }
-
-  if (isDatabaseAvailable && pool) {
-    try {
-      const result = await pool.query(`
-        SELECT name, score, distance, bananas, achieved_at AS "achievedAt"
-        FROM leaderboard_scores
-        ORDER BY score DESC, distance DESC, achieved_at ASC
-        LIMIT 10
-      `);
-      entries = result.rows;
-      return entries;
-    } catch (error) {
-      console.warn('[AI Studio] Database refresh failed, falling back to in-memory:', error.message);
     }
   }
 
@@ -305,28 +255,6 @@ async function saveHighScore({ key, name, score, distance, bananas }) {
       if (accepted) savedToCloud = true;
     } catch (error) {
       console.warn('[AI Studio] Firestore save error:', error.message);
-    }
-  }
-
-  if (isDatabaseAvailable && pool) {
-    try {
-      const result = await pool.query(`
-        INSERT INTO leaderboard_scores (player_key, name, score, distance, bananas, achieved_at)
-        VALUES ($1, $2, $3, $4, $5, NOW())
-        ON CONFLICT (player_key) DO UPDATE SET
-          name = EXCLUDED.name,
-          score = EXCLUDED.score,
-          distance = EXCLUDED.distance,
-          bananas = EXCLUDED.bananas,
-          achieved_at = EXCLUDED.achieved_at
-        WHERE leaderboard_scores.score < EXCLUDED.score
-           OR (leaderboard_scores.score = EXCLUDED.score
-               AND leaderboard_scores.distance < EXCLUDED.distance)
-        RETURNING player_key
-      `, [key, name, score, distance, bananas]);
-      if (result.rowCount === 1) savedToCloud = true;
-    } catch (error) {
-      console.warn('[AI Studio] Database save failed:', error.message);
     }
   }
 

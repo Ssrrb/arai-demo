@@ -29,12 +29,11 @@ Requiere Node.js 22 o superior.
 
 ```bash
 cp .env.example .env
-# Configura DATABASE_URL para habilitar el ranking persistente.
 npm install
 npm start
 ```
 
-El juego queda disponible en `http://localhost:8080`. La interfaz principal vive en un solo `index.html`; el servidor Node añade archivos estáticos, validación de nombres y ranking.
+El juego queda disponible en `http://localhost:8080`. La interfaz principal vive en un solo `index.html`; el servidor Node añade archivos estáticos, validación de nombres y ranking persistente en Firebase Firestore.
 
 ## Validación
 
@@ -47,7 +46,7 @@ Los tests comprueban la configuración de marca, el CTA, la sintaxis del JavaScr
 
 ## Compatibilidad de datos
 
-Las claves históricas `mcc_best`, `mcc_best_b` y el campo WebSocket `bananas` se conservan deliberadamente para no invalidar récords ni exigir una migración de PostgreSQL. En pantalla se presentan como rendimiento y fichas.
+Las claves históricas `mcc_best`, `mcc_best_b` y el campo WebSocket `bananas` se conservan deliberadamente para no invalidar récords anteriores. En pantalla se presentan como rendimiento y fichas.
 
 ## Assets TUKU
 

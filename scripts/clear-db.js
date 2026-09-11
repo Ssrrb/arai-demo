@@ -8,23 +8,13 @@
  *   npm run clear:db
  *
  * Variables opcionales:
- *   DATABASE_URL        PostgreSQL que también se debe limpiar.
  *   CLEAR_DB_SERVER_URL Servidor que se debe reiniciar (por defecto localhost).
  */
 
 const { collection, getDocs, doc, deleteDoc } = require('firebase/firestore');
-const { Pool } = require('pg');
 const fb = require('../firebase');
 
-const DATABASE_URL = process.env.DATABASE_URL;
 const SERVER_URL = process.env.CLEAR_DB_SERVER_URL || `http://127.0.0.1:${process.env.PORT || 3000}`;
-
-function hasPostgresConfiguration() {
-  return DATABASE_URL &&
-    !DATABASE_URL.includes('@HOST:') &&
-    !DATABASE_URL.includes('USER:PASSWORD') &&
-    !DATABASE_URL.includes('//USER:');
-}
 
 async function clearFirestore() {
   const snapshot = await getDocs(collection(fb.db, 'leaderboard_scores'));
@@ -44,22 +34,6 @@ async function clearFirestore() {
     console.log(`  ✓ Eliminado documento: ${docSnap.id}`);
   }));
   return snapshot.docs.length;
-}
-
-async function clearPostgres() {
-  if (!hasPostgresConfiguration()) {
-    console.log('ℹ️  PostgreSQL no configurado; se omite.');
-    return 0;
-  }
-
-  const pool = new Pool({ connectionString: DATABASE_URL, max: 1, connectionTimeoutMillis: 3000 });
-  try {
-    const result = await pool.query('DELETE FROM leaderboard_scores');
-    console.log(`✅ PostgreSQL: ${result.rowCount} registro(s) eliminado(s).`);
-    return result.rowCount;
-  } finally {
-    await pool.end();
-  }
 }
 
 async function resetRunningServer() {
@@ -95,11 +69,10 @@ async function clearLeaderboard() {
 
   try {
     const firestoreDeleted = await clearFirestore();
-    const postgresDeleted = await clearPostgres();
     await resetRunningServer();
 
     console.log('----------------------------------------------------');
-    console.log(`✅ Limpieza completa: Firestore ${firestoreDeleted}, PostgreSQL ${postgresDeleted}.`);
+    console.log(`✅ Limpieza completa: Firestore ${firestoreDeleted}.`);
     console.log('ℹ️  round_state/current se conserva para controlar el temporizador.');
     console.log('----------------------------------------------------');
   } catch (error) {
