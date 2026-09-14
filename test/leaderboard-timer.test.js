@@ -50,3 +50,19 @@ test('classification includes confetti animation and 1st and 2nd place highlight
   assert.match(html, /1º PUESTO/);
   assert.match(html, /2º PUESTO/);
 });
+
+test('classification displays top 6 players on podium when round finishes', () => {
+  // Podium configuration for top 6 positions
+  assert.match(html, /podiumConfigs/);
+  assert.match(html, /🥇 1º PUESTO/);
+  assert.match(html, /🥈 2º PUESTO/);
+  assert.match(html, /🥉 3º PUESTO/);
+  assert.match(html, /🎖️ 4º PUESTO/);
+  assert.match(html, /🎖️ 5º PUESTO/);
+  assert.match(html, /🎖️ 6º PUESTO/);
+  assert.match(html, /PODIO OFICIAL DE LOS TOP 6 JUGADORES/);
+  assert.match(html, /rank-top6/);
+  assert.match(html, /winner-badge bronze/);
+  assert.match(html, /winner-badge top6/);
+});
+

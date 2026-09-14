@@ -281,9 +281,15 @@
     }
     .celebration-podium-cards{
         display:grid;
-        grid-template-columns:1fr 1fr;
+        grid-template-columns:repeat(3, 1fr);
         gap:8px;
         margin-bottom:10px;
+    }
+    @media (max-width: 480px){
+        .celebration-podium-cards{
+            grid-template-columns:repeat(2, 1fr);
+            gap:6px;
+        }
     }
     .podium-card{
         border:2px solid;
@@ -301,6 +307,26 @@
         background:linear-gradient(180deg, rgba(148,163,184,0.3) 0%, #081119 100%);
         box-shadow:0 0 12px rgba(203,213,225,0.28);
     }
+    .podium-card.bronze{
+        border-color:#d97706;
+        background:linear-gradient(180deg, rgba(217,119,6,0.3) 0%, #081119 100%);
+        box-shadow:0 0 12px rgba(217,119,6,0.28);
+    }
+    .podium-card.rank-4{
+        border-color:#00c2ff;
+        background:linear-gradient(180deg, rgba(0,194,255,0.22) 0%, #081119 100%);
+        box-shadow:0 0 10px rgba(0,194,255,0.22);
+    }
+    .podium-card.rank-5{
+        border-color:#10b981;
+        background:linear-gradient(180deg, rgba(16,185,129,0.22) 0%, #081119 100%);
+        box-shadow:0 0 10px rgba(16,185,129,0.22);
+    }
+    .podium-card.rank-6{
+        border-color:#a855f7;
+        background:linear-gradient(180deg, rgba(168,85,247,0.22) 0%, #081119 100%);
+        box-shadow:0 0 10px rgba(168,85,247,0.22);
+    }
     .podium-rank-tag{
         font-size:10px;
         font-weight:900;
@@ -309,8 +335,13 @@
     }
     .podium-card.gold .podium-rank-tag{color:#ffe070}
     .podium-card.silver .podium-rank-tag{color:#e2e8f0}
+    .podium-card.bronze .podium-rank-tag{color:#fbbf24}
+    .podium-card.rank-4 .podium-rank-tag{color:#38bdf8}
+    .podium-card.rank-5 .podium-rank-tag{color:#34d399}
+    .podium-card.rank-6 .podium-rank-tag{color:#c084fc}
+
     .podium-card-name{
-        font-size:14px;
+        font-size:13px;
         font-weight:bold;
         color:#fff;
         overflow:hidden;
@@ -324,6 +355,10 @@
     }
     .podium-card.gold .podium-card-score{color:#fde047}
     .podium-card.silver .podium-card-score{color:#cbd5e1}
+    .podium-card.bronze .podium-card-score{color:#f59e0b}
+    .podium-card.rank-4 .podium-card-score{color:#7dd3fc}
+    .podium-card.rank-5 .podium-card-score{color:#6ee7b7}
+    .podium-card.rank-6 .podium-card-score{color:#d8b4fe}
 
     /* Leaderboard list enhanced styling */
     #leaderboard-list{list-style:none;text-align:left;margin:16px 0;counter-reset:rank}
@@ -391,12 +426,49 @@
     }
 
     /* 3er puesto: Bronze */
+    #leaderboard-list li.rank-third{
+        background:linear-gradient(90deg, rgba(217,119,6,0.18) 0%, rgba(251,191,36,0.04) 100%);
+        border:2px solid #b45309;
+        margin-bottom:4px;
+        box-shadow:0 0 6px rgba(217,119,6,0.2);
+    }
     #leaderboard-list li.rank-third::before{
         content:'🥉 3.';
-        color:#d97706;
+        color:#fbbf24;
+    }
+    #leaderboard-list li.rank-third .player-name{
+        color:#fde68a;
+        font-weight:bold;
+        display:flex;
+        align-items:center;
+        gap:6px;
+        flex-wrap:wrap;
+    }
+    #leaderboard-list li.rank-third .score-val{
+        color:#f59e0b;
+        font-weight:bold;
     }
 
-    /* When celebration / timer finished, spotlight 1st and 2nd */
+    /* 4º a 6º puesto: Top 6 */
+    #leaderboard-list li.rank-top6{
+        background:linear-gradient(90deg, rgba(14,116,144,0.12) 0%, rgba(15,23,42,0.4) 100%);
+        border-bottom:1px solid #1e3a5f;
+    }
+    #leaderboard-list li.rank-top6::before{
+        color:#38bdf8;
+    }
+    #leaderboard-list li.rank-top6 .player-name{
+        color:#e0f2fe;
+        display:flex;
+        align-items:center;
+        gap:6px;
+        flex-wrap:wrap;
+    }
+    #leaderboard-list li.rank-top6 .score-val{
+        color:#7dd3fc;
+    }
+
+    /* When celebration / timer finished, spotlight top positions */
     #leaderboard-list li.rank-first.spotlight-active{
         border-color:#ffe070;
         animation:goldPulse 1.4s infinite alternate;
@@ -407,6 +479,15 @@
         animation:silverPulse 1.4s infinite alternate;
         box-shadow:0 0 16px rgba(226,232,240,0.5), inset 0 0 8px rgba(148,163,184,0.22);
     }
+    #leaderboard-list li.rank-third.spotlight-active{
+        border-color:#f59e0b;
+        animation:bronzePulse 1.4s infinite alternate;
+        box-shadow:0 0 14px rgba(245,158,11,0.45), inset 0 0 8px rgba(217,119,6,0.2);
+    }
+    #leaderboard-list li.rank-top6.spotlight-active{
+        border:1px solid #00c2ff;
+        box-shadow:0 0 10px rgba(0,194,255,0.25);
+    }
     @keyframes goldPulse{
         from{border-color:#f59e0b;transform:scale(1)}
         to{border-color:#fef08a;transform:scale(1.02)}
@@ -414,6 +495,10 @@
     @keyframes silverPulse{
         from{border-color:#94a3b8;transform:scale(1)}
         to{border-color:#f8fafc;transform:scale(1.015)}
+    }
+    @keyframes bronzePulse{
+        from{border-color:#b45309;transform:scale(1)}
+        to{border-color:#fcd34d;transform:scale(1.015)}
     }
     .winner-badge{
         font-size:10px;
@@ -430,6 +515,26 @@
     .winner-badge.silver{
         background:#94a3b8;
         color:#000;
+    }
+    .winner-badge.bronze{
+        background:#d97706;
+        color:#000;
+    }
+    .winner-badge.top6{
+        background:#0f2942;
+        border:1px solid #00c2ff;
+        color:#38bdf8;
+    }
+    .top6-footer-hint{
+        font-size:11px;
+        color:#38bdf8;
+        background:#081b2a;
+        border:1px dashed #0284c7;
+        padding:6px 8px;
+        margin-top:10px;
+        text-align:center;
+        font-weight:bold;
+        letter-spacing:1px;
     }
 
     /* Confetti canvas */
@@ -506,7 +611,7 @@
 
         <!-- AVISO DE RONDA FINALIZADA Y CLASIFICACIÓN BLOQUEADA -->
         <div id="round-locked-banner" class="round-locked-banner" hidden>
-            🔒 <strong>RONDA FINALIZADA:</strong>
+            🔒 <strong>RONDA FINALIZADA</strong>
         </div>
 
         <!-- TEMPORIZADOR SELECCIONABLE CON SONIDO -->
@@ -564,10 +669,10 @@
             </div>
         </div>
 
-        <!-- CELEBRACIÓN AL FINALIZAR TIEMPO: RESALTE 1ER Y 2NDO PUESTO -->
+        <!-- CELEBRACIÓN AL FINALIZAR TIEMPO: RESALTE PODIO TOP 6 PUESTOS -->
         <div id="timer-celebration-banner" class="timer-celebration-banner" hidden>
             <div class="celebration-title">🎉 ¡TIEMPO COMPLETADO! 🎉</div>
-            <div class="celebration-subtitle">¡PODIO OFICIAL DEFINIDO Y CLASIFICACIÓN CERRADA!</div>
+            <div class="celebration-subtitle">¡PODIO OFICIAL DE LOS TOP 6 JUGADORES!</div>
             <div id="celebration-podium-cards" class="celebration-podium-cards"></div>
             <button id="confetti-more-btn" type="button" class="pixel-button primary small">🎊 TIRAR MÁS CONFETTI</button>
         </div>
@@ -810,7 +915,7 @@ function updateTimerDisplayUI(){
         timerDisplay.className = 'timer-display completed';
         if (roundLockedBanner) roundLockedBanner.hidden = false;
         if (timerStatusBadge){
-            timerStatusBadge.textContent = '¡FINALIZADO! (CERRADO)';
+            timerStatusBadge.textContent = '¡FINALIZADO!';
             timerStatusBadge.className = 'timer-badge finished';
         }
     } else {
@@ -1096,6 +1201,7 @@ function finishTimer(notifyServer = true){
     playTimerFanfare();
     fireConfetti(180);
     renderLeaderboard();
+    if (leaderboardModal) leaderboardModal.hidden = false;
     if (notifyServer) sendRoundAction('finish');
 }
 
@@ -1147,6 +1253,7 @@ function syncServerRoundState(state){
     if (serverFinished && !timerFinished){
         playTimerFanfare();
         fireConfetti(180);
+        if (leaderboardModal) leaderboardModal.hidden = false;
     }
     timerFinished = serverFinished;
     timerRunning = state.status === 'running';
@@ -1221,29 +1328,35 @@ function updateCelebrationPodium(){
     timerCelebrationBanner.hidden = false;
     celebrationPodiumCards.replaceChildren();
 
-    const p1 = leaderboard[0];
-    const p2 = leaderboard[1];
+    const podiumConfigs = [
+        { rank: 1, tag: '🥇 1º PUESTO', label: 'CAMPEÓN', cls: 'gold' },
+        { rank: 2, tag: '🥈 2º PUESTO', label: 'SUBCAMPEÓN', cls: 'silver' },
+        { rank: 3, tag: '🥉 3º PUESTO', label: 'BRONCE', cls: 'bronze' },
+        { rank: 4, tag: '🎖️ 4º PUESTO', label: 'TOP 6', cls: 'rank-4' },
+        { rank: 5, tag: '🎖️ 5º PUESTO', label: 'TOP 6', cls: 'rank-5' },
+        { rank: 6, tag: '🎖️ 6º PUESTO', label: 'TOP 6', cls: 'rank-6' },
+    ];
 
-    const card1 = document.createElement('div');
-    card1.className = 'podium-card gold';
-    card1.innerHTML = `
-        <div class="podium-rank-tag">🥇 1º PUESTO · CAMPEÓN</div>
-        <div class="podium-card-name">${p1 ? p1.name : '—'}</div>
-        <div class="podium-card-score">${p1 ? `${p1.score} PUNTOS` : 'Sin registro'}</div>
-    `;
-
-    const card2 = document.createElement('div');
-    card2.className = 'podium-card silver';
-    card2.innerHTML = `
-        <div class="podium-rank-tag">🥈 2º PUESTO · SUBCAMPEÓN</div>
-        <div class="podium-card-name">${p2 ? p2.name : '—'}</div>
-        <div class="podium-card-score">${p2 ? `${p2.score} PUNTOS` : 'Sin registro'}</div>
-    `;
-
-    celebrationPodiumCards.append(card1, card2);
+    podiumConfigs.forEach((cfg, idx) => {
+        const player = leaderboard[idx];
+        const card = document.createElement('div');
+        card.className = `podium-card ${cfg.cls}`;
+        const nameText = player ? player.name : '—';
+        const scoreText = player ? `${player.score} PUNTOS` : 'Sin registro';
+        card.innerHTML = `
+            <div class="podium-rank-tag">${cfg.tag} · ${cfg.label}</div>
+            <div class="podium-card-name" title="${nameText}">${nameText}</div>
+            <div class="podium-card-score">${scoreText}</div>
+        `;
+        celebrationPodiumCards.appendChild(card);
+    });
 }
 
 function renderLeaderboard(){
+    const leaderboardTitle = document.getElementById('leaderboard-title');
+    if (leaderboardTitle){
+        leaderboardTitle.textContent = timerFinished ? '🏆 PODIO TOP 6 — RONDA FINALIZADA' : '🏆 CLASIFICACIÓN EN VIVO';
+    }
     leaderboardList.replaceChildren();
     if (!leaderboard.length){
         const li = document.createElement('li');
@@ -1252,7 +1365,8 @@ function renderLeaderboard(){
         updateCelebrationPodium();
         return;
     }
-    leaderboard.slice(0, 10).forEach((entry, index) => {
+    const maxEntries = timerFinished ? 6 : 10;
+    leaderboard.slice(0, maxEntries).forEach((entry, index) => {
         const li = document.createElement('li');
         const nameSpan = document.createElement('span');
         nameSpan.className = 'player-name';
@@ -1270,7 +1384,16 @@ function renderLeaderboard(){
             nameSpan.innerHTML = `<span>${entry.name}</span> <span class="winner-badge silver">🥈 2º PUESTO</span>`;
         } else if (index === 2){
             li.classList.add('rank-third');
-            nameSpan.textContent = entry.name;
+            if (timerFinished) li.classList.add('spotlight-active');
+            nameSpan.innerHTML = `<span>${entry.name}</span> <span class="winner-badge bronze">🥉 3º PUESTO</span>`;
+        } else if (index < 6){
+            li.classList.add('rank-top6');
+            if (timerFinished){
+                li.classList.add('spotlight-active');
+                nameSpan.innerHTML = `<span>${entry.name}</span> <span class="winner-badge top6">🎖️ ${index + 1}º TOP 6</span>`;
+            } else {
+                nameSpan.textContent = entry.name;
+            }
         } else {
             nameSpan.textContent = entry.name;
         }
@@ -1278,6 +1401,16 @@ function renderLeaderboard(){
         li.append(nameSpan, scoreText);
         leaderboardList.appendChild(li);
     });
+
+    if (timerFinished && leaderboard.length > 0){
+        const footerHint = document.createElement('li');
+        footerHint.className = 'top6-footer-item';
+        footerHint.style.border = 'none';
+        footerHint.style.display = 'block';
+        footerHint.style.padding = '0';
+        footerHint.innerHTML = '<div class="top6-footer-hint">★ PODIO DE LOS TOP 6 JUGADORES CLASIFICADOS ★</div>';
+        leaderboardList.appendChild(footerHint);
+    }
 
     updateCelebrationPodium();
 }
@@ -1333,6 +1466,7 @@ function connectLeaderboard(){
                     timerFinished = true;
                     updateTimerDisplayUI();
                     renderLeaderboard();
+                    if (leaderboardModal) leaderboardModal.hidden = false;
                     showRoundFinishedNotification(message.message || 'La ronda ha finalizado. No se permiten nuevos ganadores ni subir de posiciones.');
                 }
             }
